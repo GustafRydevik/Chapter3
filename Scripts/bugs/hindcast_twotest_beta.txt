@@ -1,0 +1,39 @@
+## Very much a first try to estimate stuff!
+model {
+
+
+for (i in 1:N){ 
+  Test1.data[i]~dlnorm(log(TestMean1[i]),tau1) ###=1/(sd^2)
+  Test2.data[i]~dlnorm(log(TestMean2[i]),tau2)
+   TestMean1[i]<-test1.lookup[ndx.t1[i]]
+   TestMean2[i]<-test2.lookup[ndx.t1[i]]
+   ndx.t1[i]<-max(1,sum((InfTime[i]>time.lookup)))
+}
+
+###############
+####Priors#####
+###############
+
+
+for(i in 1:N){
+                   ### This models a situation where infections give complete immunity
+                   #assumes an exponential distribution for time since infection. 
+                   InfTime[i]~dbeta(alpha,beta)*eta
+                   #InfTime[i]<-(1-sqrt(InfTime.temp[i]))*a
+                   #InfTime.temp[i]~dunif(0,1)
+ }
+
+
+EpiStart<-max(InfTime)
+###Probably not the best priors ever
+tau1~dgamma(0.1,0.1)
+tau2~dgamma(0.1,0.1)
+#a~dbeta(1,1)
+alpha~dgamma(0.1,0.1)
+beta~dgamma(0.1,0.1)
+eta~dunif(0,prior.start)
+}
+##Define TestFun as getting data from vectors of time-and-value.
+
+
+ 
