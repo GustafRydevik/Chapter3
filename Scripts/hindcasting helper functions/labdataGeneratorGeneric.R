@@ -11,19 +11,15 @@ LabdataGeneratorGeneric<-function(testkinetic,
 
 infection.times<-do.call("timeFun",c(timeFun.args,...))
 
-
 ##Generating expected mean test results
-test.meanvalues<-sapply(testkinetic,function(x)testkinetic(infection.times))
+test.meanvalues<-testkinetic(infection.times)
 
-##Generate output data frame
-  antibody.data<-data.frame(index=seq_along(infection.times),
-                            infection.time=infection.times,
-                            antibody.mean=antibody.expected,
-                            na.mean=na.expected)
-
-test.obsvalues=do.call("errorFun",test.means=test.meanvalues,errorFun.args)
+test.obsvalues=do.call("errorFun",c(list(test.means.array=test.meanvalues),errorFun.args))
         
   return(list(infection.times=infection.times,
               test.meanvalues=test.meanvalues,
               test.obsvalues=test.obsvalues))
 }
+
+
+LabdataGeneratorGeneric(LotkaVolterra.Fun(diseaseType1),btv.2008.Fun,timeFun.args=list(),errorFun.lognorm,errorFun.args=list())

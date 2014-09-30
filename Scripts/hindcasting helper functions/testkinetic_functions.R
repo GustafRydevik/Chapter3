@@ -22,7 +22,7 @@ return(test.result)
  
 
 ## Bluetongue
-btv.df<-read.table(file.path(data.path,"Test response data","BTV.csv"),header=T,sep=",")
+btv.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/BTV.csv"),header=T,sep=",")
 btv.df$AB[is.na(btv.df$AB)]<-0
 dpi.seq<-seq(1,120,by=0.5)
 #dropping obs 1-6 in ab below because they're all zero and skew the fit.
@@ -214,8 +214,8 @@ abDetFunBTV.125<-(function(Inf.levels=btv.spline.df.comp.125,timescale=NULL){
 ###Measles
 
 library(reshape2)
-measles.ab.df<-read.table(file.path(data.path,"Test response data","Binnendijk 2003 - Measles throat swab.csv"),header=T,sep=",") ### this is also PCR!!!
-measles.pcr.df<-read.table(file.path(data.path,"Test response data","beard 2007 - measles pcr.csv"),header=T,sep=",")
+measles.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Binnendijk 2003 - Measles throat swab.csv"),header=T,sep=",") ### this is also PCR!!!
+measles.pcr.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/beard 2007 - measles pcr.csv"),header=T,sep=",")
 measles.pcr.df$Y<- 1/(-measles.pcr.df$Y)  ### what's the best unit of measurement here?
 measles.ab.df$Y.log<-log(measles.ab.df$Y)
 dpi.seq<-seq(-10,100,by=0.1)
@@ -257,8 +257,8 @@ naDetFunMeasles<-(function(Inf.levels=measles.pcr.spline,timescale=NULL){
 ##### Influensa
 #####
 
-influenza.ab.df<-read.table(file.path(data.path,"Test response data","hancioglu 2007 - influenza ab.csv"),header=T,sep=",")
-influenza.pcr.df<-read.table(file.path(data.path,"Test response data","baccam 2006 influenza VL.csv"),header=T,sep=",")
+influenza.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/hancioglu 2007 - influenza ab.csv"),header=T,sep=",")
+influenza.pcr.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/baccam 2006 influenza VL.csv"),header=T,sep=",")
 
 influenza.ab.df$A.log<-log(influenza.ab.df$A)
 dpi.seq<-seq(0,15,by=0.1)
@@ -286,14 +286,14 @@ influenza.pcr.spline$vl[influenza.pcr.spline$vl<0]<-0
 
 ####Pertusssis
 #file.rename("Teunis etal 2002 Pertussis.csv","Teunis etal 2002 Pertussis_bad.csv")
-#temp<-scan(file.path(data.path,"Test response data","Teunis etal 2002 Pertussis_bad.csv"),what="char")
+#temp<-scan(file.path(script.path,"hindcasting helper functions/Test response data/Teunis etal 2002 Pertussis_bad.csv"),what="char")
 #temp[-1]<-sapply(strsplit(temp[-1],"\\."),function(x)paste(x[1],".",x[2],",",x[3],".",x[4],sep=""))
-#write(temp,file=file.path(data.path,"Test response data","Teunis etal 2002 Pertussis.csv"))
-pertussis.ab.df<-read.table(file.path(data.path,"Test response data","Teunis etal 2002 Pertussis.csv"),sep=",",header=T)
+#write(temp,file=file.path(script.path,"hindcasting helper functions/Test response data/Teunis etal 2002 Pertussis.csv"))
+pertussis.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Teunis etal 2002 Pertussis.csv"),sep=",",header=T)
 pertussis.ab.df<-as.data.frame(10^(pertussis.ab.df))
 names(pertussis.ab.df)<-c("days","EU_per_ml")
-#pertussis.ab.df<-read.table(file.path(data.path,"Test response data","Hallander_etal_AB_2009.csv"),header=T,sep=",")
-pertussis.pcr.df<-read.table(file.path(data.path,"Test response data","Bidet etal 2008 pertussis antibiotics pcr.csv"),header=T,sep=",")
+#pertussis.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Hallander_etal_AB_2009.csv"),header=T,sep=",")
+pertussis.pcr.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Bidet etal 2008 pertussis antibiotics pcr.csv"),header=T,sep=",")
 pertussis.pcr.df$patient<-cumsum(c(1,diff(pertussis.pcr.df$X)<1))
 pertussis.pcr.df<-subset(pertussis.pcr.df,X<=17) ###last X value is an outlier
 autolib(lme4)
@@ -350,5 +350,87 @@ naDetFunPertussis<-(function(Inf.levels=pertussis.pcr.spline,timescale=NULL){
 
 inf.levels.pertussis <- pertussis.spline.df
 names(inf.levels.pertussis)<-c("time","abt","nat")
+
+
+
+###Lotka-Volterra example kinetics
+require(deSolve)
+time.scale<-7
+ Pars1<-c(growth.na=10/time.scale,killed.na=0.5/time.scale,feed.ab=2/time.scale,dieoff.ab=0.1/time.scale) ## incubation time increase, ~pertussis
+ State1<-c(nat=1,abt=0)
+ Time=seq(0,10*time.scale,by=round(7/(2*time.scale),1))
+Pars2<-c(growth.na=0.1,killed.na=1,feed.ab=0.1,dieoff.ab=0.1)/time.scale ##Fast-acting disease, approx btv
+State2<-c(nat=20,abt=0)
+Pars3<-c(growth.na=1,killed.na=0.5,feed.ab=1.5,dieoff.ab=1)/time.scale ##Chronic infection with acute phase, ~TB
+State3<-c(nat=1,abt=0)
+Pars4<-c(growth.na=1,killed.na=1.5,feed.ab=2,dieoff.ab=1)  ##Trying to get as similar curves as possible, but skipping this for now....
+State4<-c(nat=1,abt=0)
+
+
+
+ab.na.diffmod<-function(Time,y=State,parms=Pars){
+  with(as.list(c(y,parms)),{
+      dna=nat*(growth.na-killed.na*abt)
+        dab=feed.ab*nat-dieoff.ab*abt
+        return(list(c(dna,dab)))
+      })}
+diseaseType1=list(parms=Pars1,y=State1)
+diseaseType2=list(parms=Pars2,y=State2)
+diseaseType3=list(parms=Pars3,y=State3)
+
+
+inf.levels.lv$abt<-2^(inf.levels.lv$abt/12)
+ tmp<-ode(func = ab.na.diffmod, y = State1, parms = Pars1, times = Time)
+par(mfrow=c(2,1))
+ plot(tmp[,1],tmp[,2],type="l")
+ plot(tmp[,1],tmp[,3],type="l")
+
+
+LotkaVolterra.Fun<-function(disease=diseaseType1){
+  require(deSolve)
+  test.values.lookup<-do.call("ode",c(list(func = ab.na.diffmod,times=seq(0,1000,by=0.5)), disease))
+  test.values.lookup[which(test.values.lookup<1e-7)]<-1e-7
+  
+  function(time){
+    time<-ifelse(time>max(test.values.lookup[,1]),max(test.values.lookup[,1]),time)
+    t1<-approx(test.values.lookup[,1],test.values.lookup[,2],time)$y
+    t2<-approx(test.values.lookup[,1],test.values.lookup[,3],time)$y
+   return(cbind(t1,t2))
+  }
+}
+
+par(mfrow=c(3,1))
+plot(seq(1,10,by=0.1),LotkaVolterra.Fun(diseaseType1)(seq(1,10,by=0.1))[,1],type="l")
+lines(seq(1,10,by=0.1),LotkaVolterra.Fun(diseaseType1)(seq(1,10,by=0.1))[,2],type="l",col="red")
+
+plot(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType2)(seq(1,20,by=0.1))[,1],type="l")
+lines(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType2)(seq(1,20,by=0.1))[,2]*10,type="l",col="red")
+
+plot(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType3)(seq(1,20,by=0.1))[,1],type="l",ylim=c(0,3))
+lines(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType3)(seq(1,20,by=0.1))[,2],type="l",col="red")
+
+
+###Deterministic nucleic acid function, pulling values from Giles' diff model
+naDetFun<-(function(Inf.levels=inf.levels.lv,timescale=NULL){
+  function(infection.time){
+   sapply(infection.time,function(x){
+     if(x>max(Inf.levels$time)){return(Inf.levels[which.max(Inf.levels$time>=x),"nat"])}
+     if(x<=max(Inf.levels$time)){Inf.levels[min(which(Inf.levels$time>=x)),"nat"]}}
+        )}}
+   )()
+
+
+
+###Deterministic antibody function, pulling values from Giles' diff model
+abDetFun<-(function(Inf.levels=inf.levels.lv,timescale=NULL){
+  function(infection.time){
+   abt.response<-sapply(infection.time,function(x){
+     if(x>max(Inf.levels$time)){return(Inf.levels[which.max(Inf.levels$time>=x),"abt"])}
+     if(x<=max(Inf.levels$time)){Inf.levels[min(which(Inf.levels$time>=x)),"abt"]}}
+          )
+   abt.response[infection.time==0]<-rlnorm(sum(infection.time==0),mean=log(mean(Inf.levels$abt[100])))
+   return(abt.response)
+  }}
+   )()
 
 

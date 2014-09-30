@@ -1,4 +1,4 @@
-#####
+a#####
 ##Various functions for generating a set of 
 # timed events according to different distributions.
 #
@@ -7,6 +7,8 @@
 #### a uniform event generator, simulating a fully stable, endemic infection.
 stableTimeFun<-(function(){function(n.infections,start.time,end.time,...){
                          runif(n.infections,start.time,end.time)}})()   
+
+
 
 ##Intervention breakpoint generator
 intervention.at7<-(function(){function(n.infections,start.time,end.time,...){
@@ -28,6 +30,14 @@ epidemic.introduction<-(function(){function(n.infections,start.time,end.time,epi
   }})()
 
 
+EndemicDisease<-(function(){function(n.infections,incidence,start.time,end.time,...){
+  duration=abs(end.time-start.time)
+  latest.infection<-rep(Inf,n.infections)
+  for(i in duration:1){
+    latest.infection[sample(1:n.infections,round(n.infections*incidence))]<-i
+  }
+  return(latest.infection)
+  }})()
 
 
 #### a increasing event generator, simulating an increasing, endemic infection.
@@ -86,7 +96,7 @@ trunc.dexp<-function(n.infections,start.time=0,end.time=1,epidemic.start=0,slope
 ######
 
 
-pertussis.wi.df<-read.table(file.path(data.path,"Test response data","Wisconsin_pertussis_labcases.csv"),
+pertussis.wi.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Wisconsin_pertussis_labcases.csv"),
                                  header=T,sep=",")
 pertussis.wi.df<-data.frame(pertussis.wi.df[1:which(diff(pertussis.wi.df[,1])<0),],
                             conf.cases=pertussis.wi.df[-(1:which(diff(pertussis.wi.df[,1])<0)),2])
@@ -126,7 +136,7 @@ pertussis.wi.Fun<-with(list(pertussis.interpolated.round,pertussis.interpolated)
 
 ###BTV epidemic simulator
 
-btv.2008.df<-read.table(file.path(data.path,"Test response data","btv_epireport_typepos.csv"),
+btv.2008.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/btv_epireport_typepos.csv"),
                             header=T,sep=",")
 btv.2008.df<-round(btv.2008.df)
 

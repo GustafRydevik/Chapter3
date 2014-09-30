@@ -65,7 +65,7 @@ return(test.result)
  
 
 ## Bluetongue
-btv.df<-read.table(file.path(data.path,"Test response data","BTV.csv"),header=T,sep=",")
+btv.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/BTV.csv"),header=T,sep=",")
 btv.df$AB[is.na(btv.df$AB)]<-0
 dpi.seq<-seq(1,120,by=0.5)
 #dropping obs 1-6 in ab below because they're all zero and skew the fit.
@@ -257,8 +257,8 @@ abDetFunBTV.125<-(function(Inf.levels=btv.spline.df.comp.125,timescale=NULL){
 ###Measles
 
 library(reshape2)
-measles.ab.df<-read.table(file.path(data.path,"Test response data","Binnendijk 2003 - Measles throat swab.csv"),header=T,sep=",") ### this is also PCR!!!
-measles.pcr.df<-read.table(file.path(data.path,"Test response data","beard 2007 - measles pcr.csv"),header=T,sep=",")
+measles.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data","Binnendijk 2003 - Measles throat swab.csv"),header=T,sep=",") ### this is also PCR!!!
+measles.pcr.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data","beard 2007 - measles pcr.csv"),header=T,sep=",")
 measles.pcr.df$Y<- 1/(-measles.pcr.df$Y)  ### what's the best unit of measurement here?
 measles.ab.df$Y.log<-log(measles.ab.df$Y)
 dpi.seq<-seq(-10,100,by=0.1)
@@ -300,8 +300,8 @@ naDetFunMeasles<-(function(Inf.levels=measles.pcr.spline,timescale=NULL){
 ##### Influensa
 #####
 
-influenza.ab.df<-read.table(file.path(data.path,"Test response data","hancioglu 2007 - influenza ab.csv"),header=T,sep=",")
-influenza.pcr.df<-read.table(file.path(data.path,"Test response data","baccam 2006 influenza VL.csv"),header=T,sep=",")
+influenza.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/hancioglu 2007 - influenza ab.csv"),header=T,sep=",")
+influenza.pcr.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/baccam 2006 influenza VL.csv"),header=T,sep=",")
 
 influenza.ab.df$A.log<-log(influenza.ab.df$A)
 dpi.seq<-seq(0,15,by=0.1)
@@ -329,14 +329,14 @@ influenza.pcr.spline$vl[influenza.pcr.spline$vl<0]<-0
 
 ####Pertusssis
 #file.rename("Teunis etal 2002 Pertussis.csv","Teunis etal 2002 Pertussis_bad.csv")
-#temp<-scan(file.path(data.path,"Test response data","Teunis etal 2002 Pertussis_bad.csv"),what="char")
+#temp<-scan(file.path(script.path,"hindcasting helper functions/Test response data/Teunis etal 2002 Pertussis_bad.csv"),what="char")
 #temp[-1]<-sapply(strsplit(temp[-1],"\\."),function(x)paste(x[1],".",x[2],",",x[3],".",x[4],sep=""))
-#write(temp,file=file.path(data.path,"Test response data","Teunis etal 2002 Pertussis.csv"))
-pertussis.ab.df<-read.table(file.path(data.path,"Test response data","Teunis etal 2002 Pertussis.csv"),sep=",",header=T)
+#write(temp,file=file.path(script.path,"hindcasting helper functions/Test response data/Teunis etal 2002 Pertussis.csv"))
+pertussis.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Teunis etal 2002 Pertussis.csv"),sep=",",header=T)
 pertussis.ab.df<-as.data.frame(10^(pertussis.ab.df))
 names(pertussis.ab.df)<-c("days","EU_per_ml")
-#pertussis.ab.df<-read.table(file.path(data.path,"Test response data","Hallander_etal_AB_2009.csv"),header=T,sep=",")
-pertussis.pcr.df<-read.table(file.path(data.path,"Test response data","Bidet etal 2008 pertussis antibiotics pcr.csv"),header=T,sep=",")
+#pertussis.ab.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Hallander_etal_AB_2009.csv"),header=T,sep=",")
+pertussis.pcr.df<-read.table(file.path(script.path,"hindcasting helper functions/Test response data/Bidet etal 2008 pertussis antibiotics pcr.csv"),header=T,sep=",")
 pertussis.pcr.df$patient<-cumsum(c(1,diff(pertussis.pcr.df$X)<1))
 pertussis.pcr.df<-subset(pertussis.pcr.df,X<=17) ###last X value is an outlier
 autolib(lme4)

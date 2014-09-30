@@ -1,0 +1,49 @@
+##This jags file assumes a constant incidence of cases
+
+
+
+model {
+
+
+for (i in 1:N){ 
+  Test.data[i,1]~dlnorm(log(TestMean1[i]),tau1) ###=1/(sd^2)
+  Test.data[i,2]~dlnorm(log(TestMean2[i]),tau2)
+   TestMean1[i]<-test.lookup[ndx.t1[i],1]
+   TestMean2[i]<-test.lookup[ndx.t1[i],2]
+   ndx.t1[i]<-max(1,sum((InfTime[i]>time.lookup)))
+}
+
+###############
+####Priors#####
+###############
+
+
+for(i in 1:N){
+
+                InfTime[i]~dexp(lambda) 
+ }
+
+
+EpiStart<-max(InfTime)
+
+
+
+##Prior for the observational error
+tau1<-var1^(-1)
+tau2<-var2^(-1)
+
+var1<-logsd1^2
+var2<-logsd2^2
+logsd1<-abs(logsd1.tmp)
+logsd2<-abs(logsd2.tmp)
+
+logsd1.tmp~dt(0,(1/(log(1.41)/4))^2,10) #mu, tau=precision, k=df)#dunif(log(1.02),log(4))
+logsd2.tmp~dt(0,(1/(log(1.41)/4))^2,10)
+lambda~dunif(0,1)
+
+}
+
+##Define TestFun as getting data from vectors of time-and-value.
+
+
+ 

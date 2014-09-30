@@ -24,10 +24,10 @@ if(is.girion){dropbox.path<-dropbox.girion}
 sim.dir<-"/Users/gustafrydevik/simulations/"
 if(is.girion)sim.dir<-file.path(dropbox.path,"simulations/")
 ##Project specific parameters
-project.path<-file.path(dropbox.path,"PhD folder/Serology and NA")
+project.path<-file.path(dropbox.path,"PhD folder/Chapter3")
 if(is.girion){project.path<-dropbox.girion}
 data.path<-file.path(project.path,"Data")
-script.path<-file.path(project.path,"Code")
+script.path<-file.path(project.path,"Scripts")
 output.path<-file.path(project.path,"Output")
 
 lapply(dir(file.path(dropbox.path,"GusLib"),full.names=T),source)
@@ -50,14 +50,7 @@ autolib(reshape2)
 My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
 
 #### Reading in  functions specific for this project 
-source(file.path(script.path,"multitest library/eventGenerators.R"))
-source(file.path(script.path,"multitest library/testvalueGenerators.R"))
-source(file.path(script.path,"multitest library/labdataGenerator.R"))
-source(file.path(script.path,"multitest library/DensityEstimator.R"))
-source(file.path(script.path,"multitest library/errorFuns.R"))
-source(file.path(script.path,"multitest library/Interpol2D.R"))
-source(file.path(script.path,"multitest library/labdataGeneratorSimple.R"))
-
+lapply(grep("R$",dir(file.path(script.path,"hindcasting helper functions/"),full.names=T),value=T),source)
 
 
 seed<-1000
@@ -69,20 +62,21 @@ burn.in<-1000 ##10000 seems enough for endtime=63
 adapt.iter<-1000
 pathogen="btv" #or "pertussis"
 
-Set.endtime=14#7*7
+End.time=14#7*7
 Start.time=1
 n.chains.=5
 samplesize= 100
 Actual.=T
-onetest=F
+n.tests=2
 converge<-T
 converge.criteria<-1.15
 converge.time=0.2
 rep.prefix=NULL
 
 
-test.curves<-c(t1="naDetFunBTV",t2="abDetFunBTV")
-epidemic.trend.fun<-pertussis.Wi.fun
+
+kinetic.fun<-LotkaVolterra.Fun(disease=diseaseType1)
+epidemic.trend.fun<-pertussis.wi.Fun
 
 parseCommandArgs()
 set.seed(seed)
@@ -100,39 +94,37 @@ for(i in 0:nreps){
   t0<-proc.time()
         iteration.data<-
           LabdataGeneratorGeneric(
-            testFunctions=sapply(test.curves,get),
-            timeFun=epidemic.trend.fun,
+            testkinetic=kinetic.fun,
+            timeFun=EndemicDisease,
             timeFun.args=list(n.infection=samplesize,
                               start.time=Start.time,
                               end.time=Set.endtime,
-                              Actual=Actual.),
+                              Actual=Actual.,
+                              incidence=1/10),
             errorFun=errorFun.lognorm,
-            errorFun.args=list(standard.deviation=log(measurement.sd))
+            errorFun.args=list(standard.deviation=log(c(1.01,1.01)))#log(measurement.sd))
           )
-        
-        if(samplesize<nrow(iteration.data)){iteration.data<-iteration.data[sample(seq_len(nrow(iteration.data)),samplesize),]}
-  bugsdata<-list(N=nrow(iteration.data),
-                 Test.data=iteration.data$testdata,
-                 time.lookup=seq(0,(End.time-Start.time)*2,length.out=(End.time-Start.time)*2*4),
-                 test.lookup=lapply(test.curves,function(x){
-                   x(seq(0,(End.time-Start.time)*2,length.out=(End.time-Start.time)*2*4))}), 
+          bugsdata<-list(N=nrow(iteration.data$test.obsvalues),
+                 Test.data=iteration.data$test.obsvalues,
+                 time.lookup=c(seq(0.5,99.5,by=0.5),seq(100,198,by=2),Inf),
+                 test.lookup=kinetic.fun(c(seq(0.5,99.5,by=0.5),Inf)),
                  prior.start=2^round(log2(Set.endtime-Start.time)),
-                 logsd=log(measurement.sd),
-                 ntests=length(test.curves)
-                            )
+                 ntest=n.tests)
         pars.inits<-vector(length=n.chains.,mode="list")
         for(C in 1:n.chains.){
           pars.inits[[C]]<-list(
             peak.time=rgamma(1,4,scale=Set.endtime/4),
             duration.tmp=abs(rt(1,5)),
-            logsd1.tmp=runif(1,log(1.02),log(4)),
-            logsd2.tmp=runif(1,log(1.02),log(4)))
+            logsd.tmp=rep(runif(1,log(1.02),log(4)),n.tests))
         }
  
         
-          multitest.bugs.reinfect<-jags.model(file=file.path(script.path,"bugs model/hindcast_generic.txt"),data=test.bugsdata,inits=pars.inits,
-                                              n.adapt=0,n.chains=n.chains.)
-        } 
+          multitest.bugs.reinfect<-jags.model(file=file.path(script.path,"bugs/hindcast_constant.txt"),
+                                              data=bugsdata,
+                                              inits=pars.inits,
+                                              n.adapt=0,
+                                              n.chains=n.chains.)
+         
         possibleError1<-tryCatch(adapt(multitest.bugs.reinfect,adapt.iter),
                                  error=function(e) e )
         
@@ -144,9 +136,10 @@ for(i in 0:nreps){
         possibleError2<-tryCatch(update(multitest.bugs.reinfect,burn.in),
                                  error=function(e) e)
         if(!(inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
-      iteration.samples<-coda.samples(multitest.bugs.reinfect,c("EpiStart","InfTime","duration","peak.time"),1000)}
+          iteration.samples<-coda.samples(multitest.bugs.reinfect,c("EpiStart","tau1","tau2","InfTime","lambda"),1000)
         }
-       gelman.current<-gelman.diag(iteration.samples[,c("EpiStart","duration","peak.time"),drop=FALSE])$mpsrf
+        }
+       gelman.current<-gelman.diag(iteration.samples[,c("EpiStart","lambda"),drop=FALSE])$mpsrf
             print("current convergence: ")
         print(gelman.current)
         print("\n")
