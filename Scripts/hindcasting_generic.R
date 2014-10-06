@@ -62,10 +62,10 @@ burn.in<-1000 ##10000 seems enough for endtime=63
 adapt.iter<-1000
 pathogen="btv" #or "pertussis"
 
-End.time=14#7*7
+End.time=100#7*7
 Start.time=1
 n.chains.=5
-samplesize= 100
+samplesize= 1000
 Actual.=T
 n.tests=2
 converge<-T
@@ -100,7 +100,7 @@ for(i in 0:nreps){
                               start.time=Start.time,
                               end.time=Set.endtime,
                               Actual=Actual.,
-                              incidence=1/10),
+                              incidence=1/100),
             errorFun=errorFun.lognorm,
             errorFun.args=list(standard.deviation=log(c(1.01,1.01)))#log(measurement.sd))
           )
@@ -119,13 +119,13 @@ for(i in 0:nreps){
         }
  
         
-          multitest.bugs.reinfect<-jags.model(file=file.path(script.path,"bugs/hindcast_constant.txt"),
+          multitest.bugs<-jags.model(file=file.path(script.path,"bugs/hindcast_constant.txt"),
                                               data=bugsdata,
                                               inits=pars.inits,
                                               n.adapt=0,
                                               n.chains=n.chains.)
          
-        possibleError1<-tryCatch(adapt(multitest.bugs.reinfect,adapt.iter),
+        possibleError1<-tryCatch(adapt(multitest.bugs,adapt.iter),
                                  error=function(e) e )
         
         gelman.current<-Inf
@@ -133,10 +133,10 @@ for(i in 0:nreps){
         elapsed.time<-0
         while(((gelman.current>converge.criteria)&(elapsed.time<converge.time))){
         
-        possibleError2<-tryCatch(update(multitest.bugs.reinfect,burn.in),
+        possibleError2<-tryCatch(update(multitest.bugs,burn.in),
                                  error=function(e) e)
         if(!(inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
-          iteration.samples<-coda.samples(multitest.bugs.reinfect,c("EpiStart","tau1","tau2","InfTime","lambda"),1000)
+          iteration.samples<-coda.samples(multitest.bugs,variable.names=mod.varnames,1000)
         }
         }
        gelman.current<-gelman.diag(iteration.samples[,c("EpiStart","lambda"),drop=FALSE])$mpsrf
@@ -168,6 +168,4 @@ for(i in 0:nreps){
           paste("_samplesize",samplesize,sep=""),
           "_",rep.prefix,i,
           ".RData",sep=""))
-      #save(btv.scenarios.results,file=paste("~/btv-",ifelse(onetest,"one","two"),"test_start_",Start.time,"_test_endtime_",Set.endtime,"_",i,"_seed",seed,ifelse(Actual.,"",paste("samplesize",samplesize,sep="")),".RData",sep=""))
-      
-    }
+      }

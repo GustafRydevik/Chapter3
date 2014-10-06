@@ -1,6 +1,6 @@
 EndemicDisease<-(function(){function(n.infections,incidence,start.time,end.time,...){
   duration=abs(end.time-start.time)
-  latest.infection<-rep(Inf,n.infections)
+  latest.infection<-rep(NA,n.infections)
   for(i in duration:1){
     latest.infection[sample(1:n.infections,round(n.infections*incidence))]<-i
   }
@@ -11,13 +11,20 @@ EndemicDisease<-(function(){function(n.infections,incidence,start.time,end.time,
 
 EndemicLinear<-(function(){function(n.infections,incidence,start.time,end.time,trend,...){
   duration=abs(end.time-start.time)
-  latest.infection<-rep(Inf,n.infections)
-  incidence.per.time<- -seq(duration,1)*trend+incidence
+  latest.infection<-rep(NA,n.infections)
+  incidence.per.time<- -(1:duration)*trend+incidence
   for(i in seq(duration,1)){
     latest.infection[sample(1:n.infections,round(n.infections*incidence.per.time[i]))]<-i
   }
   return(latest.infection)
 }})()
+
+
+### Demonstration that for Endemiclinear, P(t<T)=exp(a+trend*T/2)
+tmp<-hist(EndemicLinear(10000,incidence=0.1,start.time=1,end.time=100,trend=-0.001),
+          breaks=0:100,freq=FALSE,ylim=c(0,0.20))$counts
+plot(cumsum(tmp)/10000,ylim=c(0,1),type="l")
+lines(pexp(1:100,0.1+(1:100*0.001)/2),col="red")
 
 
 EpidemicExp<-(function(){function(n.infections,start.time=0,end.time,slope=4){

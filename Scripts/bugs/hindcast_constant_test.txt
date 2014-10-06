@@ -1,0 +1,26 @@
+##This jags file assumes a constant incidence of cases
+
+
+
+model {
+
+
+###############
+####Priors#####
+###############
+
+
+for (i in 1:N){
+
+                is.censored[i]~dinterval(InfTime[i],censorLimit)
+                InfTime[i]~dexp(lambda)
+                
+
+ }
+
+
+##Prior for the observational error
+
+lambda~dgamma(0.1,0.1)
+
+}

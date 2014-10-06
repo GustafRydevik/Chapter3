@@ -7,8 +7,7 @@ model {
 
 for (i in 1:N){ 
 for (test in 1:ntest){
-  Test.data.mod[i,test]~dlnorm(log(TestMean[i,test]),tau[test]) ###=1/(sd^2)
-  Test.data.mod[i,test]<-Test.data[i,test]*(1-is.infected[i]*1e-6)
+  Test.data[i,test]~dlnorm(log(TestMean[i,test]),tau[test]) ###=1/(sd^2)
    TestMean[i,test]<-test.lookup[ndx.t1[i],test]
 }
    ndx.t1[i]<-max(1,sum((InfTime[i]>time.lookup)))
@@ -21,8 +20,8 @@ for (test in 1:ntest){
 
 for (i in 1:N){
 
-                InfTime[i]~dexp(lambda) 
-                is.infected[i]~rbinom(0.5)
+                InfTime[i]~dexp(lambda)
+                is.naive[i]~dinterval(InfTime[i],censorLimit)
 
  }
 
@@ -37,7 +36,7 @@ for (test in 1:ntest){
  logsd[test]<-abs(logsd.tmp[test])
  logsd.tmp[test]~dt(0,(1/(log(1.41)/4))^2,10) #mu, tau=precision, k=df
 }
-lambda~dunif(0,1)
+lambda~dgamma(0.1,0.1)
 
 }
 

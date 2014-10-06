@@ -392,9 +392,11 @@ LotkaVolterra.Fun<-function(disease=diseaseType1){
   test.values.lookup[which(test.values.lookup<1e-7)]<-1e-7
   
   function(time){
-    time<-ifelse(time>max(test.values.lookup[,1]),max(test.values.lookup[,1]),time)
+    time<-ifelse(is.finite(time)&time>max(test.values.lookup[,1]),max(test.values.lookup[,1]),time)
     t1<-approx(test.values.lookup[,1],test.values.lookup[,2],time)$y
     t2<-approx(test.values.lookup[,1],test.values.lookup[,3],time)$y
+    t1[!is.finite(time)]<-1e-7
+    t2[!is.finite(time)]<-1e-7
    return(cbind(t1,t2))
   }
 }
