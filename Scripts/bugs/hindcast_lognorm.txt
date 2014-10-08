@@ -21,8 +21,8 @@ for (test in 1:ntest){
 for (i in 1:N){
 
          InfTime[i]<-exp(log(peak.time)+InfTime.dev[i]*duration.log*(1-lower.quantile[i]*2))
-                   lower.quantile[i]~dbin(0.5,1)
-                   
+
+                   lower.quantile[i]~dbin(0.5,1)             
                    InfTime.dev[i]~dnorm(0,1) T(0,)
  }
 
@@ -34,24 +34,32 @@ EpiStart<-max(InfTime)
 ###############
 
 ##Priors for the lognormal
-peak.time<-exp(log(prior.start)+peak.time.dev*(prior.peak.sd+duration.log)*(1-lower.quantile.peak*2))
-                   lower.quantile.peak~dbin(0.5,1)
-                   peak.time.dev~dnorm(0,1) T(0,)
 
+##Peak has a lognormal prior P(Peak|priorsd,priormean)
+###Previously,  we added duration.log here - I wonder why? 
+####to scale by the duration of the epidemic I presume...)
+
+peak.time<-exp(log(prior.start)+peak.time.dev*(prior.peak.sd)*(1-lower.quantile.peak*2))
+lower.quantile.peak~dbin(0.5,1)
+peak.time.dev~dnorm(0,1) T(0,)
+
+
+##Duration of the epidemic has a t-distributed prior
+duration.log<-log(duration)
+duration<-abs(duration.tmp)+1
+duration.tmp~dt(0,(1/log(100))^2,5)
 
 ##Prior for the observational error
 
 for (test in 1:ntest){
  tau[test]<-(variance[test])^(-1)
  variance[test]<-(logsd[test])^2
- logsd[test]<-abs(logsd.tmp[test])
- logsd.tmp[test]~dt(0,(1/(log(1.41)/4))^2,10) #mu, tau=precision, k=df
+#logsd[test]<-abs(logsd.tmp[test])
+ #logsd.tmp[test]~dt(0,(1/(log(1.41)/4))^2,10) #mu, tau=precision, k=df
 }
-lambda~dgamma(0.0001,0.0001)
+logsd[1]<-log(1.27)
+logsd[1]<-log(1.57)
 
 }
-
-##Define TestFun as getting data from vectors of time-and-value.
-
 
  
