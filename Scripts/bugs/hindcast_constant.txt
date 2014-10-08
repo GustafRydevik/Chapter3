@@ -20,7 +20,7 @@ for (test in 1:ntest){
 
 for (i in 1:N){
 
-                InfTime[i]~dexp(lambda)
+                InfTime[i]~dexp(incidence)
                 is.naive[i]~dinterval(InfTime[i],censorLimit)
 
  }
@@ -36,7 +36,7 @@ for (test in 1:ntest){
  logsd[test]<-abs(logsd.tmp[test])
  logsd.tmp[test]~dt(0,(1/(log(1.41)/4))^2,10) #mu, tau=precision, k=df
 }
-lambda~dgamma(0.1,0.1)
+incidence~dgamma(0.1,0.1)
 
 }
 

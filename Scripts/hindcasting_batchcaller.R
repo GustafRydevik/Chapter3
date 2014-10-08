@@ -23,30 +23,20 @@ if(is.girion){dropbox.path<-dropbox.girion}
 #sim.dir<-"D:/simulations/"
 #sim.dir<-paste(dropbox.path,"/simulations",sep="")
 sim.dir<-"/Users/gustafrydevik/simulations/"
-if(is.girion)sim.dir<-file.path(dropbox.path,"simulations")
+if(is.girion)sim.dir<-file.path(dropbox.path,"simulations/")
 ##Project specific parameters
-project.path<-file.path(dropbox.path,"PhD folder/Serology and NA")
+project.path<-file.path(dropbox.path,"PhD folder/Chapter3")
 if(is.girion){project.path<-dropbox.girion}
 data.path<-file.path(project.path,"Data")
-script.path<-file.path(project.path,"Code")
+script.path<-file.path(project.path,"Scripts")
 output.path<-file.path(project.path,"Output")
 
 lapply(dir(file.path(dropbox.path,"GusLib"),full.names=T),source)
 lapply(dir(file.path(script.path,"multitest library"),full.names=T),source)
 
 ##Note to self: pare this down substantially!
-# autolib(mclust)
-# autolib(lattice)
-# autolib(KernSmooth)
-# autolib(RColorBrewer)
-# autolib(deldir)
-# autolib(spatstat)
-# autolib(maptools)
-# autolib(sp)
 autolib(rjags)
 autolib(batch)
-# autolib(ggplot2)
-# autolib(gridExtra)
 autolib(reshape2)
 
 My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
@@ -54,44 +44,96 @@ My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
 #### Reading in  functions specific for this project 
 
 
-# ##Scenario: 
-# sample size 10-100, short,long, and full scenario, one test vs two tests. 
-#
 
-sim.scenarios<-list(pertussis.late=list(start.time=98,end.time=176,sample.size=c(10,20,40,80,89)),
-                pertussis.late.full=list(start.time=98,end.time=252,sample.size=c(10,20,40,80,100,200,233)),
-                btv.early=list(start.time=1,end.time=14,sample.size=c(10,20,24)),
-                btv.full=list(start.time=1,end.time=49,sample.size=c(10,20,40,61))
-  )
-                
-#sample.size.range<-c(seq(10,50,by=10),100,200,300)
-sample.size.range<-c(20,50,100)
+base.pars<-list(
+### MCMC parameters
+seed=1000,
+burn.in=10,
+adapt.iter=10,
+n.chains.=5,
+samplesize= 10,
+mcmc.ss=10,
 
-current.seed<-as.integer(as.numeric(format(Sys.time(),"%Y%m%d%H")))
+###Other run parameters
+converge=FALSE,
+converge.criteria=1.15,
+converge.time=0.2,
 
+
+###Epidemic trend pars
+Start.time=1,
+End.time=30,
+Incidence=1/100
+)
+
+constant.pars<-list(
+Epi.scenario="EndemicConstant" ##EndemicLinear EpidemicExp EpidemicLognorm
+)
+##Par for linear and exponential trend
+linear.pars<-list(
+  Epi.scenario="EndemicLinear", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Trend=-1/100
+)
+
+##Exponential trend
+exponential.pars<-list(
+  Epi.scenario="EpidemicExp", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Trend=2
+)
+##lognormal trend
+lognormal.pars<-list(
+  Epi.scenario="EpidemicLognorm", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Peak.time=15,
+  Epi.sd=10
+)
+
+
+
+##Test value generator parameters
+
+d1.pars<-list(
+diseaseType="diseaseType1" ##diseaseType2 diseaseType3
+)
+
+d2.pars<-list(
+  diseaseType="diseaseType3" ##diseaseType2 diseaseType3
+)
+
+d3.pars<-list(
+  diseaseType="diseaseType3" ##diseaseType2 diseaseType3
+)
+
+##test kinetics pars
+ ##Fix this so we can refer to either NA or AB
+test1.sd=1.27
+test2.sd=1.57
+
+sample.size.range<-c(100,500,1000)[3]
+ntest.range=2
     
 
+reps.per.call=1
+ncalls.per.combination=1
 
-for(rep in 0:19){
-  for(simvars in sim.scenarios){
-    for(Sample.size in sample.size.range){
-      for(Onetest in c(1,0)){
-        Pathogen<-if(simvars$start.time==1){"btv"}else{"pertussis"}
-        rbatch(rfile=file.path(script.path,"SerologyDataSim_lognorm_fixedvariance.R"),
-               seed=current.seed,
-               samplesize=Sample.size,
-               Actual.=1,
-               onetest=Onetest,
-               nreps=5,
-               rep.prefix=rep,
-               Start.time=simvars$start.time,
-               Set.endtime=simvars$end.time,
-               burn.in=8000,
-               adapt.iter=2000,
-               converge=F,
-               converge.criteria=1.15,
-               converge.time=5,
-               pathogen=Pathogen)
+for(rep in (ncalls.per.combination-1)){
+  for(Sample.size in sample.size.range){
+    for(trendpars in list(constant.pars,linear.pars,exponential.pars,lognormal.pars)){
+      for(diseasepars in list(d1.pars,d2.pars,d3.pars)){
+        for(ntests in ntest.range[1]){
+          do.call("rbatch",
+                  c(list(rfile=shQuote(file.path(script.path,"hindcasting_generic.R"))),
+                    base.pars,
+                    trendpars,
+                    diseasepars,
+                    list(rep.prefix=rep,
+                         nreps=(reps.per.call-1),
+                         ncores=1),
+                    list(test1.sd=test1.sd,
+                         test2.sd=test2.sd,
+                         n.tests=ntests)
+                  )
+          )
+        }
       }
     }
   }

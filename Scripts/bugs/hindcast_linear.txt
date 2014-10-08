@@ -30,8 +30,8 @@ for (i in 1:N){
                 ones[i] ~ dbern(p[i])
                 is.naive[i]~dinterval(InfTime[i],censorLimit)
                 p[i] <- L[i] / C
-                L[i]<-(alpha-beta*InfTime[i])*exp(-(alpha-beta*InfTime[i]/2)*InfTime[i])
-##Beta is negative, to indicate trend as time increases, or time since infection decrease
+                L[i]<-(incidence-trend*InfTime[i])*exp(-(incidence-trend*InfTime[i]/2)*InfTime[i])
+##trend is negative, to indicate trend as time increases, or time since infection decrease
 
  }
 
@@ -47,8 +47,8 @@ for (test in 1:ntest){
  logsd[test]<-abs(logsd.tmp[test])
  logsd.tmp[test]~dt(0,(1/(log(1.41)/4))^2,10) #mu, tau=precision, k=df
 }
-alpha~dnorm(0, 0.0001)
-beta~dnorm(0, 0.0001)
+incidence~dnorm(0, 0.0001)
+trend~dnorm(0, 0.0001)
 
 for(i in 1:N){
 InfTime[i]~dgamma(0.001,0.001)

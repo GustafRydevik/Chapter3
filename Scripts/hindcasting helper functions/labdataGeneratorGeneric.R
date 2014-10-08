@@ -20,6 +20,3 @@ test.obsvalues=do.call("errorFun",c(list(test.means.array=test.meanvalues),error
               test.meanvalues=test.meanvalues,
               test.obsvalues=test.obsvalues))
 }
-
-
-LabdataGeneratorGeneric(LotkaVolterra.Fun(diseaseType1),btv.2008.Fun,timeFun.args=list(),errorFun.lognorm,errorFun.args=list())
