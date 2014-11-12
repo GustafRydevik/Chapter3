@@ -35,7 +35,7 @@ par(mfrow=c(2,1))
 LotkaVolterra.Fun<-function(disease=diseaseType1){
   require(deSolve)
   test.values.lookup<-do.call("ode",c(list(func = ab.na.diffmod,times=seq(0,1000,by=0.5)), disease))
-  test.values.lookup[which(test.values.lookup<1e-7)]<-1e-7
+  
   
   function(time){
     time<-ifelse(is.finite(time)&time>max(test.values.lookup[,1]),max(test.values.lookup[,1]),time)

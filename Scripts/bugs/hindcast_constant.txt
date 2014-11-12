@@ -1,6 +1,9 @@
 ##This jags file assumes a constant incidence of cases
 
+data{
+inpeak.prior<-10
 
+}
 
 model {
 
@@ -8,7 +11,7 @@ model {
 for (i in 1:N){ 
 for (test in 1:ntest){
   Test.data[i,test]~dlnorm(log(TestMean[i,test]),tau[test]) ###=1/(sd^2)
-   TestMean[i,test]<-test.lookup[ndx.t1[i],test]
+  TestMean[i,test]<-test.lookup[ndx.t1[i],test]
 }
    ndx.t1[i]<-max(1,sum((InfTime[i]>time.lookup)))
 }
@@ -31,12 +34,13 @@ EpiStart<-max(InfTime)
 ##Prior for the observational error
 
 for (test in 1:ntest){
- tau[test]<-(variance[test])^(-1)
- variance[test]<-(logsd[test])^2
- logsd[test]<-abs(logsd.tmp[test])
- logsd.tmp[test]~dt(0,(1/(log(1.41)/4))^2,10) #mu, tau=precision, k=df
+tau[test]<-1/logsd[test]^2
+logsd[test]<-log(sd[test])
+sd[test]<-log(sd.exp.tmp[test])+1
+sd.exp.tmp[test]~dexp(1/0.1)T(1,)
+
 }
-incidence~dgamma(0.1,0.1)
+incidence~dunif(0,1)
 
 }
 

@@ -1,0 +1,5 @@
+model{
+obs<-log(obs.exp.tmp)+1
+obs.exp.tmp~dexp(1/0.2)T(1,) 
+
+}

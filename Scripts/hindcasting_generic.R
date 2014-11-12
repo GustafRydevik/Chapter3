@@ -21,7 +21,7 @@ dropbox.path<-c(dropbox.osx,dropbox.sac,dropbox.bioss)[got.mdrive+is.win+1]
 if(is.girion){dropbox.path<-dropbox.girion}
 #sim.dir<-"D:/simulations/"
 #sim.dir<-paste(dropbox.path,"/simulations",sep="")
-sim.dir<-"/Users/gustafrydevik/simulations/"
+sim.dir<-"/Users/gustafrydevik/simulations/Chapter3"
 if(is.girion)sim.dir<-file.path(dropbox.path,"simulations/")
 ##Project specific parameters
 project.path<-file.path(dropbox.path,"PhD folder/Chapter3")
@@ -39,7 +39,7 @@ autolib(reshape2)
 
 My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
 
-source("/Users/gustafrydevik/Dropbox/PhD folder/Chapter3/Scripts/hindcasting helper functions/DensityEstimator.R")
+source(file.path(script.path,"hindcasting helper functions/DensityEstimator.R"))
 #### Reading in  functions specific for this project 
 lapply((grep("R$",dir(file.path(script.path,"hindcasting\ helper\ functions"),full.names=T),value=T)),source)
 
@@ -50,7 +50,6 @@ lapply((grep("R$",dir(file.path(script.path,"hindcasting\ helper\ functions"),fu
 
 ### MCMC parameters 
 seed=1000
-burn.in=1000
 adapt.iter=1000
 n.chains.=5
 mcmc.ss=1000

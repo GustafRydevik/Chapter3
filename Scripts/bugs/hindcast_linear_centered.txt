@@ -38,8 +38,8 @@ for (i in 1:N){
  }
 
 
-EpiStart<-max(InfTime)
-
+time.mean<-censorLimit/2
+#incidence<-incidence.c-time.mean*trend
 ##Prior for the observational error
 
 for (test in 1:ntest){
@@ -98,7 +98,7 @@ for (test in 1:ntest){
 tau[test]<-1/logsd[test]^2
 logsd[test]<-log(sd[test])
 sd[test]<-log(sd.exp.tmp[test])+1
-sd.exp.tmp[test]~dexp(1/0.05)T(1,)
+sd.exp.tmp[test]~dexp(1/0.5)T(1,)
 
 
 
@@ -114,8 +114,8 @@ sd.exp.tmp[test]~dexp(1/0.05)T(1,)
   
 }
 
-incidence~dgamma(0.01,0.01)
-trend~dnorm(0, 0.0001)
+incidence~dlnorm(log(0.1),1/log(10)^2)#dnorm(0, 0.0001)T(0,)
+trend~dnorm(0, 1/0.1)
 
 
 for(i in 1:N){
