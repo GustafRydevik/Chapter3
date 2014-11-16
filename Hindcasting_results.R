@@ -49,3 +49,29 @@ ggsave(file.path(output.path,"LV_phase_time.png"),plot=lv.time.phase,width=8,hei
 
 
 
+##Posterior plots
+library(ggmcmc)
+load(grep("Constant",dir(sim.dir,full.name=T),value=T)[1])
+ggs.constant<-ggs(scenarios.results$est)
+load(grep("Increase",dir(sim.dir,full.name=T),value=T)[1])
+ggs.increase<-ggs(scenarios.results$est)
+load(grep("Decrease",dir(sim.dir,full.name=T),value=T)[1])
+ggs.decrease<-ggs(scenarios.results$est)
+
+ggs_histogram(rbind(data.frame(ggs.increase,scenario="increase"),
+      data.frame(ggs.increase,scenario="decrease"),
+      data.frame(ggs.increase,scenario="constant")))
+
+ggs.all<-rbind(data.frame(ggs.increase,scenario="increase"),
+               data.frame(ggs.decrease,scenario="decrease"),
+               data.frame(ggs.constant,scenario="constant"))
+
+ggplot(data=subset(ggs.all,Parameter=="incidence"),
+       aes(x=value,group=Chain))+
+  geom_density(aes(fill=factor(Chain)),alpha=0.3)+
+  facet_wrap(~scenario,ncol=1)
+
+ggplot(data=subset(ggs.all,Parameter=="trend"),
+aes(x=value,group=Chain))+
+  geom_density(aes(fill=factor(Chain)),alpha=0.3)+
+  facet_wrap(~scenario,ncol=1)

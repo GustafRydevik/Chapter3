@@ -22,7 +22,7 @@ dropbox.path<-c(dropbox.osx,dropbox.sac,dropbox.bioss)[got.mdrive+is.win+1]
 if(is.girion){dropbox.path<-dropbox.girion}
 #sim.dir<-"D:/simulations/"
 #sim.dir<-paste(dropbox.path,"/simulations",sep="")
-sim.dir<-"/Users/gustafrydevik/simulations/"
+sim.dir<-"/Users/gustafrydevik/simulations/Chapter3/"
 if(is.girion)sim.dir<-file.path(dropbox.path,"simulations/")
 ##Project specific parameters
 project.path<-file.path(dropbox.path,"PhD folder/Chapter3")
@@ -47,12 +47,11 @@ My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
 
 base.pars<-list(
 ### MCMC parameters
-seed=1000,
-burn.in=25,
-adapt.iter=25,
+burn.in=1000,
+adapt.iter=500,
 n.chains.=5,
-samplesize= 1000,
-mcmc.ss=100,
+samplesize= 10000,
+mcmc.ss=10000,
 
 ###Other run parameters
 converge=FALSE,
@@ -68,11 +67,18 @@ Incidence=1/100
 
 constant.pars<-list(
 Epi.scenario="EndemicConstant" ##EndemicLinear EpidemicExp EpidemicLognorm
+Trend=0
 )
-##Par for linear and exponential trend
-linear.pars<-list(
-  Epi.scenario="EndemicLinear", ##EndemicLinear EpidemicExp EpidemicLognorm
-  Trend=-1/100
+##Par for linear increase
+linear.increase.pars<-list(
+  Epi.scenario="EndemicIncrease", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Trend=-1/100/50
+)
+
+##Par for linear decrease
+linear.decrease.pars<-list(
+  Epi.scenario="EndemicDecrease", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Trend=1/100/50
 )
 
 ##Exponential trend
@@ -108,13 +114,13 @@ d3.pars<-list(
 test1.sd=1.27
 test2.sd=1.57
 
-sample.size.range<-c(100,500,1000)[3]
+sample.size.range<-c(10000,20000,50000)
 ntest.range=2
     
 
 reps.per.call=1
 ncalls.per.combination=1
-
+seed.iter<-seed
 for(rep in (ncalls.per.combination-1)){
   for(Sample.size in sample.size.range){
     for(trendpars in list(constant.pars,linear.increase.pars,linear.decrease.pars)){
@@ -130,12 +136,14 @@ for(rep in (ncalls.per.combination-1)){
                          ncores=1),
                     list(test1.sd=test1.sd,
                          test2.sd=test2.sd,
-                         n.tests=ntests)
+                         n.tests=ntests),
+                    seed=seed.iter
                   )
           )
+          seed.iter<-seed.iter+1
         }
       }
     }
   }
 }
-rbatch.local.run()
+rbatch.local.run(ncores=4)

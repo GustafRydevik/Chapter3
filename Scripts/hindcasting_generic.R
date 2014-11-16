@@ -21,7 +21,7 @@ dropbox.path<-c(dropbox.osx,dropbox.sac,dropbox.bioss)[got.mdrive+is.win+1]
 if(is.girion){dropbox.path<-dropbox.girion}
 #sim.dir<-"D:/simulations/"
 #sim.dir<-paste(dropbox.path,"/simulations",sep="")
-sim.dir<-"/Users/gustafrydevik/simulations/Chapter3"
+sim.dir<-"/Users/gustafrydevik/simulations/Chapter3/"
 if(is.girion)sim.dir<-file.path(dropbox.path,"simulations/")
 ##Project specific parameters
 project.path<-file.path(dropbox.path,"PhD folder/Chapter3")
@@ -62,13 +62,14 @@ rep.prefix=NULL
 nreps=0
 
 ###Epidemic trend pars
-Epi.scenario="EndemicLinear" ##EndemicLinear EpidemicExp EpidemicLognorm
+Epi.scenario="EndemicConstant" ##EndemicLinear EpidemicExp EpidemicLognorm
+Epi.model="EndemicLinear"
 Start.time=1
 End.time=30
 Incidence=1/100
 samplesize= 1000
 ##Par for linear and exponential trend
-Trend=-1/100
+Trend=0.01/50
 Peak.time=15
 Epi.sd=10
 
@@ -105,16 +106,8 @@ measurement.sd=c(test1.sd=1.27,test2.sd=1.57)
 
 
 #Constant trend args
-if(Epi.scenario=="EndemicConstant"){
-scenario.args=list(n.infection=samplesize,
-                   start.time=Start.time,
-                   end.time=End.time,
-                   incidence=1/100)
 
-modelscript.name="bugs/hindcast_constant.txt"
-sample.vars=c("incidence")
-}else{
-  if(Epi.scenario=="EndemicLinear"){
+if(Epi.scenario%in%c("EndemicConstant","EndemicIncrease","EndemicDecrease")){
 ##Linear trend args
 scenario.args=list(n.infection=1000,
                    start.time=Start.time,
@@ -122,7 +115,8 @@ scenario.args=list(n.infection=1000,
                    incidence=Incidence,
                    trend=Trend)
 modelscript.name="bugs/hindcast_linear.txt"
-sample.vars=c("incidence","trend")
+sample.vars=c("incidence","trend","sd","InfTime")
+Epi.model="EndemicLinear"
 }else{
 ##Exponential trend args
   if(Epi.scenario=="EpidemicExp"){
@@ -132,6 +126,7 @@ scenario.args=list(n.infection=samplesize,
                    trend=Trend)
 modelscript.name="bugs/hindcast_exponential.txt"
 sample.vars=c("trend")
+Epi.model="EpidemicExp"
 
 }else{
 ##lognorm trend args 
@@ -141,10 +136,11 @@ scenario.args=list(n.infection=samplesize,
                    peak.time=Peak.time,
                    sd=Epi.sd)
                  
+Epi.model="EpidemicLognorm"
 
 modelscript.name="bugs/hindcast_lognorm.txt"
 sample.vars=c("peak.time","duration")
-}}}
+}}
 ##############################
 
 #### Step.data (and likelihood!)
@@ -159,7 +155,7 @@ for(i in 0:nreps){
         iteration.data<-
           LabdataGeneratorGeneric(
             testkinetic=kinetic.fun,
-            timeFun= get(Epi.scenario),
+            timeFun= get(Epi.model),
             timeFun.args=scenario.args,
             errorFun=errorFun.lognorm,
             errorFun.args=list(standard.deviation=log(measurement.sd))
@@ -168,25 +164,20 @@ for(i in 0:nreps){
   ##### Generating inits and bugs pars below here ###########
   ###########################################################
   
-  if(Epi.scenario=="EndemicConstant"){
-    bugs.args=list(censorLimit=End.time-Start.time+1,
-                   is.naive=is.na(iteration.data$test.obsvalues[,1])
-    )
-    inits.list=list(
-      InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
-                     35,runif(nrow(iteration.data$test.obsvalues),0,30))
-    )
-  }else{
-    if(Epi.scenario=="EndemicLinear"){
+ 
+   if(Epi.scenario%in%c("EndemicConstant","EndemicIncrease","EndemicDecrease")){
       ##Linear trend args
       bugs.args=list(censorLimit=End.time-Start.time+1,
                      is.naive=is.na(iteration.data$test.obsvalues[,1])
       )
-      inits.list=list(
+      inits.list<-vector(mode="list",length=n.chains.)
+      for(C in 1:n.chains.){
+      inits.list[[C]]=list(
         InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
                        35,runif(nrow(iteration.data$test.obsvalues),0,30)),
         incidence=runif(1,0.01,0.3),
-        trend=sign(Trend)*runif(1,0,0.01))
+        trend=runif(1,-0.01/35,0.01/35))
+      }
     }else{
       ##Exponential trend args
       if(Epi.scenario=="EpidemicExp"){
@@ -201,7 +192,7 @@ for(i in 0:nreps){
                         duration.tmp=abs(rt(1,5))
         )
         
-      }}}
+      }}
   ##########################################
   ##########################################
           bugsdata<-c(list(N=nrow(iteration.data$test.obsvalues),
@@ -213,7 +204,7 @@ for(i in 0:nreps){
                 )
         pars.inits<-vector(length=n.chains.,mode="list")
         for(C in 1:n.chains.){
-          pars.inits[[C]]<-c(inits.list,
+          pars.inits[[C]]<-c(inits.list[[C]],
                              list(logsd.tmp=rep(runif(1,log(1.02),log(4)),n.tests))
           )
         }
@@ -265,5 +256,6 @@ for(i in 0:nreps){
           "_t",n.tests,
           paste("_samplesize",samplesize,sep=""),
           "_",rep.prefix,i,
+        "_gr",round(gelman.current,2),
           ".RData",sep=""))
       }

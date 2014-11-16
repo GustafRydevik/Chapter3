@@ -121,7 +121,7 @@ lineardist<-function(time,alpha,beta,chain){
 
 par(mfrow=c(1,2))
 for(i in 1:5){
-  betterPairs(as.data.frame(tmp.samples[[i]][,c("incidence","trend","sd[1]","sd[2]")]))
+  betterPairs(as.data.frame(tmp.samples[[i]][,c("incidence","trend")]))
 }
 par(mfrow=c(2,3))
 for(i in 1:5){

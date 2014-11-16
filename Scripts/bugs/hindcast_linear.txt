@@ -114,7 +114,7 @@ sd.exp.tmp[test]~dexp(1/0.05)T(1,)
   
 }
 
-incidence~dgamma(0.01,0.01)
+incidence~dunif(0,1)
 trend~dnorm(0, 0.0001)
 
 
