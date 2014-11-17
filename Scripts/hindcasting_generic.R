@@ -172,6 +172,10 @@ for(i in 0:nreps){
             errorFun=errorFun.lognorm,
             errorFun.args=list(standard.deviation=log(measurement.sd))
           )
+  n.sampled<-length(iteration.data$infection.times)
+  iteration.data<-lapply(iteration.data,function(x){if(!is.null(ncol(x))){x[is.finite(iteration.data$infection.times),]}else{x[is.finite(iteration.data$infection.times)]}})
+  iteration.data$n.sampled<-n.sampled
+  iteration.data$PropAboveCensor<-(n.sampled-length(iteration.data$infection.times))/n.sampled
   ###########################################################
   ##### Generating inits and bugs pars below here ###########
   ###########################################################
@@ -200,8 +204,7 @@ for(i in 0:nreps){
         inits.list<-vector(mode="list",length=n.chains.)
         for(C in 1:n.chains.){
           inits.list[[C]]=list(
-            InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
-                           35,runif(nrow(iteration.data$test.obsvalues),0,30)),
+            InfTime=runif(nrow(iteration.data$test.obsvalues),0,End.time-Start.time+1),
             incidence=runif(1,0.01,0.3),
             trend=runif(1,-0.01/35,0.01/35))
         }

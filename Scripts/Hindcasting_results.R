@@ -96,14 +96,42 @@ hindcast.ll<-function(data,type="linear",diseaseType="DiseaseType1",pars){
 
 
 
+load(file.path(sim.dir,"diseaseType1_EndemicDecrease_seed_1002_t2_samplesize10000_00_gr1.RData"))
+ggs.increase<-ggs(scenarios.results$est)
+decrease.true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
+decrease.true.inftime$Parameter<-paste0("InfTime[",1:nrow(decrease.true.inftime),"]")
+decrease.true.inftime$scenario<-"decrease"
+
+load(file.path(sim.dir,"diseaseType1_EndemicConstant_seed_1000_t2_samplesize10000_00_gr1.RData"))
+ggs.constant<-ggs(scenarios.results$est)
+
+constant.true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
+constant.true.inftime$Parameter<-paste0("InfTime[",1:nrow(constant.true.inftime),"]")
+constant.true.inftime$scenario<-"constant"
+
+
 load(file.path(sim.dir,"diseaseType1_EndemicIncrease_seed_1001_t2_samplesize10000_00_gr1.RData"))
-est.inftime<-scenarios.results$est[,grep("InfTime",colnames(scenarios.results$est[[1]])),]
-est.trendpars<-ggs(scenarios.results$est[,c("trend","incidence"),])
-trendpars.mean<-ddply(subset(est.trendpars,10000-Iteration<101),.(Parameter,Chain),summarise,meanPar=mean(value))
-true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
-true.inftime$Parameter<-paste0("InfTime[",1:1000,"]")
-ggs.inftime<-ggs(do.call("mcmc.list",(lapply(est.inftime,function(x)as.mcmc(x[9901:10000,])))))
-all.inftime<-merge(true.inftime,ggs.inftime,by="Parameter")
+ggs.decrease<-ggs(scenarios.results$est)
+increase.true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
+increase.true.inftime$Parameter<-paste0("InfTime[",1:nrow(increase.true.inftime),"]")
+increase.true.inftime$scenario<-"increase"
+
+
+ggs.all<-rbind(data.frame(ggs.increase,scenario="increase"),
+               data.frame(ggs.decrease,scenario="decrease"),
+               data.frame(ggs.constant,scenario="constant"))
+
+
+est.trendpars<-subset(ggs.all,Parameter%in%c("incidence","trend"))
+est.inftime<-subset(ggs.all,grepl("InfTime",Parameter))
+
+trendpars.mean<-ddply(subset(est.trendpars,max(Iteration)-Iteration<101),.(Parameter,Chain,scenario),summarise,meanPar=mean(value))
+#true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
+#true.inftime$Parameter<-paste0("InfTime[",1:nrow(true.inftime),"]")
+
+all.inftime<-merge(rbind(increase.true.inftime,
+                         decrease.true.inftime,
+                         constant.true.inftime),est.inftime,by=c("Parameter","scenario"))
 mean.inftime<-data.frame(true.inftime,ddply(ggs.inftime,.(Parameter),summarise,meanInfTime=mean(value)))
 
 
@@ -121,10 +149,19 @@ colnames(estTrend.df)<-paste0("Chain",1:5)
 estTrend.df<-data.frame(Time=1:100,estTrend.df)
 estTrend.df<-melt(estTrend.df,id.vars="Time",variable.name="Chain")
 estTrend.df$Chain<-as.numeric(estTrend.df$Chain)
+estTrend.df$TrueCurve<-lineardist(estTrend.df$Time,1/100,1/100/50,1)
+
 ggplot(all.inftime,aes(x=true.inftime,y=value-true.inftime))+geom_point()+facet_wrap(~Chain,ncol=1)
+
 ggplot(all.inftime,aes(x=value))+geom_histogram(aes(y=..count../sum(..count..)*5),binwidth=1)+
   geom_line(data=estTrend.df,aes(x=Time,y=value))+
+  geom_line(data=estTrend.df,aes(x=Time,y=TrueCurve*1/(326/1000)),col="red")+
   facet_wrap(~Chain,ncol=1)
+
+
+###scatterplot of trend vs incidence
+ggplot(recast(est.trendpars,Chain+Iteration~Parameter,measure.var="value"),aes(x=incidence,y=trend,col=Iteration))+
+  geom_line(alpha=0.75)+geom_point(alpha=0.75)+facet_wrap(~Chain)
 
 ##True histogram 
 hist(true.inftime$true.inftime,freq=FALSE)

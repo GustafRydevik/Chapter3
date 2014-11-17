@@ -2,7 +2,6 @@
 
 data {
 for(i in 1:N){
-ones[i]<-1
 }
 C<-10000
 sd.prior<-1.5
@@ -29,10 +28,11 @@ for (test in 1:ntest){
 
 for (i in 1:N){
                 #InfTime[i]~dexp(lambda)
-                ones[i] ~ dbern(p[i])
-                is.naive[i]~dinterval(InfTime[i],censorLimit)
+                #ones[i] ~ dbern(p[i])
+                #is.naive[i]~dinterval(InfTime[i],censorLimit)
                 p[i] <- L[i] / C
-                L[i]<-(incidence-trend*InfTime[i])*exp(-(incidence-trend*(InfTime[i])/2)*InfTime[i])
+                L[i]<-(incidence.onlypos-trend.onlypos*InfTime[i])*exp(-(incidence.onlypos-trend.onlypos*(InfTime[i])/2)*InfTime[i])
+         # 1-PropAboveCensor is to scale the incidence to make appropriate for whole population
 ##trend is negative, to indicate trend as time increases, or time since infection decreases
 
  }
@@ -46,7 +46,7 @@ for (test in 1:ntest){
 
 
 ### gamma prior on the precision on the log scale,
-###following Fink "compendium of conjugate priors", trating mu as known.
+###following Fink "compendium of conjugate priors", treating mu as known.
 ### but - V. bad mixing
 #sd[test]<-exp(1/sqrt(tau[test]))
 #tau[test]~dgamma(0.001,0.001)
@@ -114,12 +114,14 @@ logsd[test]<-log(sd[test])
   
 }
 
+incidence.onlypos<-incidence/(1-PropAboveCensor)
+trend.onlypos<-trend/(1-PropAboveCensor)
 incidence~dunif(0,1)
 trend~dnorm(0, 0.0001)
 
 
 for(i in 1:N){
-InfTime[i]~dlnorm(log(infpeak.prior),1/log(10^(1/2))^2)
+InfTime[i]~dlnorm(log(infpeak.prior),1/log(10^(1/2))^2) T(,censorLimit)
 #InfTime[i]~dgamma(0.001,0.001)
 #InfTime[i]<-exp(InfTime.log[i])
 #InfTime.log[i]~dnorm(,0.00)

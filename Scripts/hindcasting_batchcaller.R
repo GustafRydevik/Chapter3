@@ -47,11 +47,12 @@ My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
 
 base.pars<-list(
 ### MCMC parameters
-burn.in=1000,
+burn.in=10000,
 adapt.iter=500,
 n.chains.=5,
 samplesize= 10000,
 mcmc.ss=10000,
+thin=10
 
 ###Other run parameters
 converge=FALSE,
@@ -140,7 +141,7 @@ ncalls.per.combination=1
 seed.iter<-seed
 for(rep in (ncalls.per.combination-1)){
   for(Sample.size in sample.size.range){
-    for(trendpars in list(constant.pars.fixedSD,linear.increase.pars.fixedSD,linear.decrease.pars.fixedSD)){
+    for(trendpars in list(constant.pars.fixedSD,linear.increase.pars.fixedSD,linear.decrease.pars.fixedSD)[2]){
       for(diseasepars in list(d1.pars,d2.pars,d3.pars)[1]){
         for(ntests in ntest.range[1]){
           do.call("rbatch",
