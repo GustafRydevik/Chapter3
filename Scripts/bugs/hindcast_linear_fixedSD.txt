@@ -1,0 +1,132 @@
+##This jags file assumes a constant incidence of cases
+
+data {
+for(i in 1:N){
+ones[i]<-1
+}
+C<-10000
+sd.prior<-1.5
+infpeak.prior<-10
+}
+
+
+
+model {
+
+
+for (i in 1:N){ 
+for (test in 1:ntest){
+   Test.data[i,test]~dlnorm(log(TestMean[i,test]),tau[test]) ###=1/(sd^2)
+   TestMean[i,test]<-test.lookup[ndx[i],test]
+}
+   ndx[i]<-max(1,sum((InfTime[i]>time.lookup)))
+}
+
+###############
+####Priors#####
+###############
+
+
+for (i in 1:N){
+                #InfTime[i]~dexp(lambda)
+                ones[i] ~ dbern(p[i])
+                is.naive[i]~dinterval(InfTime[i],censorLimit)
+                p[i] <- L[i] / C
+                L[i]<-(incidence-trend*InfTime[i])*exp(-(incidence-trend*(InfTime[i])/2)*InfTime[i])
+##trend is negative, to indicate trend as time increases, or time since infection decreases
+
+ }
+
+
+EpiStart<-max(InfTime)
+
+##Prior for the observational error
+
+for (test in 1:ntest){
+
+
+### gamma prior on the precision on the log scale,
+###following Fink "compendium of conjugate priors", trating mu as known.
+### but - V. bad mixing
+#sd[test]<-exp(1/sqrt(tau[test]))
+#tau[test]~dgamma(0.001,0.001)
+
+### a log-lognormal prior distribution for the sd. 
+##Slightly better mixing than the above. At least three chains are mixing....
+##but still bad.
+
+#tau[test]<-1/logsd[test]^2
+#logsd[test]~dlnorm(log(log(2)),(1/log(sqrt(10))/2)^2)
+#sd[test]<-exp(logsd[test])
+
+##A folded T prior for sd on the observed scale. Some mixing,#
+## but still bad
+#tau[test]<-1/(log(sd[test]))^(2)
+#sd[test]<-abs(sd.tmp[test])+1
+#sd.tmp[test]~dt(sd.prior-1,(5)^2,10) #mu, tau=precision, k=df
+
+##A folded T prior for sd on the log scale. This behaves a bit better
+### some of the chains are actually behaving! 
+#But one chain goes off on a weird, huge tangent
+#tau[test]<-1/(logsd[test])^(2)
+#sd[test]<-exp(logsd[test])
+#logsd[test]<-abs(logsd.tmp[test])
+#logsd.tmp[test]~dt(log(sd.prior),(5)^2,10) #mu, tau=precision, k=df
+
+
+
+##Trying a T prior on the log-log scale
+### Not helping
+#tau[test]<-1/(logsd[test])^(2)
+#sd[test]<-exp(logsd[test])
+#logsd[test]<-exp(logsd.tmp[test])
+#pars: mu, tau=precision, k=df
+#logsd.tmp[test]~dt(log(log(sd.prior)),(log(5))^2,10) 
+
+
+##Also trying a T-prior on the exp observed scale
+#this actually improves mixing quite a bit!
+###also makes estimates go haywire,but whatever
+#tau[test]<-1/logsd[test]^2
+#logsd[test]<-log(sd[test])
+#sd[test]<-log(sd.exp[test])
+#sd.exp[test]<-abs(sd.exp.tmp[test])+exp(1)
+#sd.exp.tmp[test]~dt(exp(sd.prior),(1/10)^2,10) 
+
+###So the problem above is that the folded noncentral t-prior has a hump..
+## Below is a version of an exponential distribution prior for the sd.
+tau[test]<-1/logsd[test]^2
+logsd[test]<-log(sd[test])
+#sd[test]<-log(sd.exp.tmp[test])+1
+#sd.exp.tmp[test]~dexp(1/0.05)T(1,)
+
+
+
+#sd[test]~
+
+#tau[test]<-1/logsd[test]^2
+#logsd[test]~dnorm(0,1/1000) T(0,)
+
+#sd[test]<-abs(sd.tmp[test])+1
+#sd.tmp[test]~dt(0,(1/((0.41)/4))^2,10)
+ #logsd[test]<-abs(logsd.tmp[test])
+ #logsd.tmp[test]~dt(0,(1/(log(sd.propr)/4))^2,10) #mu, tau=precision, k=df 
+  
+}
+
+incidence~dunif(0,1)
+trend~dnorm(0, 0.0001)
+
+
+for(i in 1:N){
+InfTime[i]~dlnorm(log(infpeak.prior),1/log(10^(1/2))^2)
+#InfTime[i]~dgamma(0.001,0.001)
+#InfTime[i]<-exp(InfTime.log[i])
+#InfTime.log[i]~dnorm(,0.00)
+}
+}
+
+##Define TestFun as getting data from vectors of time-and-value.
+
+
+ 

@@ -53,6 +53,7 @@ seed=1000
 adapt.iter=1000
 n.chains.=5
 mcmc.ss=1000
+thin=1
 
 ###Other run parameters
 converge<-F
@@ -62,7 +63,7 @@ rep.prefix=NULL
 nreps=0
 
 ###Epidemic trend pars
-Epi.scenario="EndemicConstant" ##EndemicLinear EpidemicExp EpidemicLognorm
+Epi.scenario="EndemicConstantFixedSD" ##EndemicLinear EpidemicExp EpidemicLognorm
 Epi.model="EndemicLinear"
 Start.time=1
 End.time=30
@@ -118,6 +119,17 @@ modelscript.name="bugs/hindcast_linear.txt"
 sample.vars=c("incidence","trend","sd","InfTime")
 Epi.model="EndemicLinear"
 }else{
+  if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
+    ##Linear trend args
+    scenario.args=list(n.infection=1000,
+                       start.time=Start.time,
+                       end.time=End.time,
+                       incidence=Incidence,
+                       trend=Trend)
+    modelscript.name="bugs/hindcast_linear_fixedSD.txt"
+    sample.vars=c("incidence","trend","InfTime")
+    Epi.model="EndemicLinear"
+  }else{
 ##Exponential trend args
   if(Epi.scenario=="EpidemicExp"){
 scenario.args=list(n.infection=samplesize,
@@ -140,7 +152,7 @@ Epi.model="EpidemicLognorm"
 
 modelscript.name="bugs/hindcast_lognorm.txt"
 sample.vars=c("peak.time","duration")
-}}
+}}}
 ##############################
 
 #### Step.data (and likelihood!)
@@ -179,6 +191,21 @@ for(i in 0:nreps){
         trend=runif(1,-0.01/35,0.01/35))
       }
     }else{
+      if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
+        ##Linear trend args
+        bugs.args=list(censorLimit=End.time-Start.time+1,
+                       is.naive=is.na(iteration.data$test.obsvalues[,1]),
+                       sd=c(test1.sd,test2.sd)
+        )
+        inits.list<-vector(mode="list",length=n.chains.)
+        for(C in 1:n.chains.){
+          inits.list[[C]]=list(
+            InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
+                           35,runif(nrow(iteration.data$test.obsvalues),0,30)),
+            incidence=runif(1,0.01,0.3),
+            trend=runif(1,-0.01/35,0.01/35))
+        }
+      }else{
       ##Exponential trend args
       if(Epi.scenario=="EpidemicExp"){
         bugs.args=list()
@@ -192,7 +219,7 @@ for(i in 0:nreps){
                         duration.tmp=abs(rt(1,5))
         )
         
-      }}
+      }}}
   ##########################################
   ##########################################
           bugsdata<-c(list(N=nrow(iteration.data$test.obsvalues),
@@ -227,9 +254,9 @@ for(i in 0:nreps){
         possibleError2<-tryCatch(update(multitest.bugs,burn.in),
                                  error=function(e) e)
         if(!(inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
-          iteration.samples<-coda.samples(multitest.bugs,variable.names=sample.vars,mcmc.ss)
+          iteration.samples<-coda.samples(multitest.bugs,variable.names=sample.vars,mcmc.ss,thin=thin)
         }
-       gelman.current<-mean(gelman.diag(iteration.samples[,sample.vars,drop=FALSE])$psrf[,1])
+       gelman.current<-mean(gelman.diag(iteration.samples[,grep(paste(sample.vars[-which(sample.vars=="InfTime")],collapse="|"),colnames(iteration.samples[[1]])),drop=FALSE])$psrf[,1])
             print("current convergence: ")
         print(gelman.current)
         print("\n")

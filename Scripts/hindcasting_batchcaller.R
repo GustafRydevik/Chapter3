@@ -81,6 +81,23 @@ linear.decrease.pars<-list(
   Trend=1/100/50
 )
 
+
+constant.pars.fixedSD<-list(
+  Epi.scenario="EndemicConstant", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Trend=0
+)
+##Par for linear increase
+linear.increase.pars.fixedSD<-list(
+  Epi.scenario="EndemicIncrease", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Trend=-1/100/50
+)
+
+##Par for linear decrease
+linear.decrease.pars.fixedSD<-list(
+  Epi.scenario="EndemicDecrease", ##EndemicLinear EpidemicExp EpidemicLognorm
+  Trend=1/100/50
+)
+
 ##Exponential trend
 exponential.pars<-list(
   Epi.scenario="EpidemicExp", ##EndemicLinear EpidemicExp EpidemicLognorm
@@ -114,7 +131,7 @@ d3.pars<-list(
 test1.sd=1.27
 test2.sd=1.57
 
-sample.size.range<-c(10000,20000,50000)
+sample.size.range<-c(10000,20000,50000)[1]
 ntest.range=2
     
 
@@ -123,8 +140,8 @@ ncalls.per.combination=1
 seed.iter<-seed
 for(rep in (ncalls.per.combination-1)){
   for(Sample.size in sample.size.range){
-    for(trendpars in list(constant.pars,linear.increase.pars,linear.decrease.pars)){
-      for(diseasepars in list(d1.pars,d2.pars,d3.pars)){
+    for(trendpars in list(constant.pars.fixedSD,linear.increase.pars.fixedSD,linear.decrease.pars.fixedSD)){
+      for(diseasepars in list(d1.pars,d2.pars,d3.pars)[1]){
         for(ntests in ntest.range[1]){
           do.call("rbatch",
                   c(list(rfile=shQuote(file.path(script.path,"hindcasting_generic.R"))),
