@@ -149,3 +149,42 @@ for(i in 1:5){
 plot(iteration.data$infection.times,colMeans(tmp.samples[[i]][,grep("InfTime",colnames(tmp.samples[[1]]))]))
 plot(iteration.data$infection.times,iteration.data$infection.times-colMeans(tmp.samples[[i]][,grep("InfTime",colnames(tmp.samples[[5]]))]))
 }
+
+
+tmp<-jags.model(file.path(script.path,"bugs/hindcast_linear_test.txt"),
+                data=list(N=length(increase.true.inftime[,1]),censorLimit=30,
+                          InfTime=increase.true.inftime[,1]),
+                inits=list(trend.tmp=1/100/30,incidence=1/100))
+adapt(tmp,5000)
+update(tmp,10000)
+tmp.samples<-coda.samples(tmp,variable.names=c("incidence","trend","L"),50000)
+hist(increase.true.inftime[,1],breaks=seq(0,31,by=1),xlim=c(0,100),freq=F)
+est.dist<-lineardist(1:100,mean(tmp.samples[[1]][,"incidence"]),mean(tmp.samples[[1]][,"trend"]),chain=1)
+lines(1:100,lineardist(1:100,mean(tmp.samples[[1]][,"incidence"]),mean(tmp.samples[[1]][,"trend"]),chain=1)/sum(est.dist[1:30]))
+
+lines(1:100,lineardist(1:100,1/100,1/100/50,chain=1)*1000/329,col="red")
+
+
+linear.ll<-function(incidence,trend,InfTime){
+  censorLimit=30
+  dunif(incidence,log=T)+
+    dnorm(trend,0,1/sqrt(0.0001),log=T)+
+  log((incidence-trend*InfTime)*exp(-(incidence-trend*(InfTime)/2)*InfTime)/(1-exp(-(incidence+trend*censorLimit/2)*censorLimit)))
+}
+
+linear.ll(1/100,-1/100/50,InfTime=increase.true.inftime[,1])
+linear.ll(mean(tmp.samples[[1]][,1]),-mean(tmp.samples[[1]][,2]),InfTime=increase.true.inftime[,1])
+
+InfTime<-increase.true.inftime[,1]
+incidence<-1/100
+trend<--1/100/50
+(incidence-trend*InfTime)*exp(-(incidence-trend*(InfTime)/2)*InfTime)
+InfTime<-sort(InfTime)
+InfTime
+linear.ll(1/100,-1/100/50,InfTime=increase.true.inftime[,1])
+(incidence-trend*InfTime)*exp(-(incidence-trend*(InfTime)/2)*InfTime)
+incidence<-mean(tmp.samples[[1]][,1])
+trend<-mean(tmp.samples[[1]][,2])
+(incidence-trend*InfTime)*exp(-(incidence-trend*(InfTime)/2)*InfTime)
+
+

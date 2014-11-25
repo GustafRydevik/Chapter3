@@ -116,10 +116,16 @@ logsd[test]<-log(sd[test])
   
 }
 
-trend<-trend.tmp-incidence/censorLimit  ### This is to ensure that overall incidence is always positive over the time of interest. 
-trend.tmp~dnorm(0, 0.0001) T(0,)
-incidence~dunif(0,1)
+### This is to ensure that overall incidence is always positive over the time of interest. 
 
+
+
+incidence<-mean.incidence-trend*censorLimit/2
+
+trend~dunif(-2*mean.incidence/censorLimit,2*mean.incidence/censorLimit)
+
+mean.incidence<-mean.incidence.tmp/censorLimit
+mean.incidence.tmp~dbeta(N+1,(NTot-N)+1)
 
 for(i in 1:N){
 InfTime[i]~dlnorm(log(infpeak.prior),1/log(10^(1/2))^2) T(,censorLimit)

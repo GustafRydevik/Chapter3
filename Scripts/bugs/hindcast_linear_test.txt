@@ -1,0 +1,26 @@
+ 
+data{
+for(i in 1:N){
+ones[i]<-1
+
+}
+C<-1000
+
+}
+
+
+
+
+model {
+for(i in 1:N){
+
+ones[i] ~ dbern(p[i])
+p[i] <- L[i]/C
+L[i]<-(incidence+trend*InfTime[i])*exp(-(incidence+trend*(InfTime[i])/2)*InfTime[i])/(1-exp(-(incidence*censorLimit+trend*censorLimit^2/2)))*step(censorLimit-InfTime[i])
+
+}
+trend<-trend.tmp-incidence/censorLimit
+trend.tmp~dnorm(0, 0.0001) T(0,)
+incidence~dunif(0,1)
+
+}
