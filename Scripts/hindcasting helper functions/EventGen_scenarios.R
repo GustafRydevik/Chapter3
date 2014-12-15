@@ -12,9 +12,10 @@ EndemicConstant<-(function(){function(n.infections,incidence,start.time,end.time
 EndemicLinear<-(function(){function(n.infections,incidence,start.time,end.time,trend,...){
   duration=abs(end.time-start.time)
   latest.infection<-rep(NA,n.infections)
-  incidence.per.time<- (1:duration)*trend+incidence # Trend as measured from Now to Past
+  incidence.per.time<- (0.5+(0:(duration-1)))*trend+incidence # Trend as measured from Now to Past
   for(i in seq(duration,1)){
-    latest.infection[sample(1:n.infections,round(n.infections*incidence.per.time[i]))]<-i
+    sample.ndx<-sample(1:n.infections,round(n.infections*incidence.per.time[i]))
+    latest.infection[sample.ndx]<-runif(length(sample.ndx),i-1,i)#Ideally a trapezoid..
   }
   return(latest.infection)
 }})()

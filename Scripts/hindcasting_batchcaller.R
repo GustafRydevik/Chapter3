@@ -32,7 +32,7 @@ script.path<-file.path(project.path,"Scripts")
 output.path<-file.path(project.path,"Output")
 
 lapply(dir(file.path(dropbox.path,"GusLib"),full.names=T),source)
-lapply(dir(file.path(script.path,"multitest library"),full.names=T),source)
+lapply(dir(file.path(script.path,"hindcasting helper functions"),full.names=T),source)
 
 ##Note to self: pare this down substantially!
 autolib(rjags)
@@ -42,8 +42,6 @@ autolib(reshape2)
 My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
 
 #### Reading in  functions specific for this project 
-
-
 
 base.pars<-list(
 ### MCMC parameters
@@ -61,7 +59,7 @@ converge.time=0.2,
 
 ###Epidemic trend pars
 Start.time=0,
-End.time=30,
+End.time=20,
 Incidence=5/100
 )
 
@@ -72,13 +70,13 @@ Trend=0
 ##Par for linear increase
 linear.increase.pars<-list(
   Epi.scenario="EndemicIncrease", ##EndemicLinear EpidemicExp EpidemicLognorm
-  Trend=-5/100/35
+  Trend=-5/100/25
 )
 
 ##Par for linear decrease
 linear.decrease.pars<-list(
   Epi.scenario="EndemicDecrease", ##EndemicLinear EpidemicExp EpidemicLognorm
-  Trend=5/100/35 #Trend as measured by time Now -> Past
+  Trend=5/100/25 #Trend as measured by time Now -> Past
 )
 
 
@@ -128,10 +126,10 @@ d3.pars<-list(
 
 ##test kinetics pars
  ##Fix this so we can refer to either NA or AB
-test1.sd=1.27
-test2.sd=1.57
+test1.sd=1.3
+test2.sd=1.3
 
-sample.size.range<-c(10000,20000,50000)[1]
+sample.size.range<-c(5000,20000,50000)[1]
 ntest.range=2
     
 
@@ -141,7 +139,7 @@ seed.iter<-seed
 for(rep in (ncalls.per.combination-1)){
   for(Sample.size in sample.size.range){
     for(trendpars in list(constant.pars.fixedSD,linear.increase.pars.fixedSD,linear.decrease.pars.fixedSD)){
-      for(diseasepars in list(d1.pars,d2.pars,d3.pars)[1]){
+      for(diseasepars in list(d1.pars,d2.pars,d3.pars)[2]){
         for(ntests in ntest.range[1]){
           do.call("rbatch",
                   c(list(rfile=shQuote(file.path(script.path,"hindcasting_generic.R"))),

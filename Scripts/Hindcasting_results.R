@@ -1,4 +1,4 @@
-
+library(ggplot2)
 #### example of a Lotka-Volterra graph 
 lv.example.df<-data.frame(time=seq(1,10,by=0.1),LotkaVolterra.Fun(diseaseType1)(seq(1,10,by=0.1)))
 lv.example.p<-ggplot(data=lv.example.df,aes(x=time))+
@@ -72,14 +72,20 @@ hindcast.ll<-function(data,type="linear",diseaseType="DiseaseType1",pars){
 
 
 
-load(file.path(sim.dir,"diseaseType1_EndemicDecreaseFixedSD_seed_1002_t2_samplesize10000_00_gr1.RData"))
+load(file.path(sim.dir,"diseaseType3_EndemicDecreaseFixedSD_seed_1002_t2_samplesize5000_00_gr1.RData"))
+#load(file.path(sim.dir,"diseaseType3_EndemicKnownTimes_seed_1002_t2_samplesize2000_00_gr1.RData"))
+
+censorLimit<-(scenarios.results$control.vars$end.time-scenarios.results$control.vars$start.time)
 ggs.decrease<-ggs(scenarios.results$est)
 decrease.true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
 decrease.true.inftime$Parameter<-paste0("InfTime[",1:nrow(decrease.true.inftime),"]")
 decrease.true.inftime$scenario<-"decrease"
 decrease.true.pars<-data.frame(scenarios.results$control.vars,scenario="decrease")
 
-load(file.path(sim.dir,"diseaseType1_EndemicConstantFixedSD_seed_1000_t2_samplesize10000_00_gr1.RData"))
+
+
+load(file.path(sim.dir,"diseaseType3_EndemicConstantFixedSD_seed_1000_t2_samplesize5000_00_gr1.RData"))
+#load(file.path(sim.dir,"diseaseType3_EndemicKnownTimes_seed_1000_t2_samplesize2000_00_gr1.RData"))
 ggs.constant<-ggs(scenarios.results$est)
 
 constant.true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
@@ -88,7 +94,8 @@ constant.true.inftime$scenario<-"constant"
 constant.true.pars<-data.frame(scenarios.results$control.vars,scenario="constant")
 
 
-load(file.path(sim.dir,"diseaseType1_EndemicIncreaseFixedSD_seed_1001_t2_samplesize10000_00_gr1.RData"))
+load(file.path(sim.dir,"diseaseType3_EndemicIncreaseFixedSD_seed_1001_t2_samplesize5000_00_gr1.RData"))
+#load(file.path(sim.dir,"diseaseType3_EndemicKnownTimes_seed_1001_t2_samplesize2000_00_gr1.RData"))
 ggs.increase<-ggs(scenarios.results$est)
 increase.true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
 increase.true.inftime$Parameter<-paste0("InfTime[",1:nrow(increase.true.inftime),"]")
@@ -101,24 +108,32 @@ ggs.all<-rbind(data.frame(ggs.increase,scenario="increase"),
                data.frame(ggs.constant,scenario="constant"))
 
 true.pars<-rbind(increase.true.pars,decrease.true.pars,constant.true.pars)
-est.trendpars<-subset(ggs.all,Parameter%in%c("incidence","trend"))
+true.pars<-transform(true.pars,mean.incidence=incidence+end.time/2*trend)
+est.trendpars<-subset(ggs.all,Parameter%in%c("incidence","trend","mean.incidence"))
 est.inftime<-subset(ggs.all,grepl("InfTime",Parameter))
 
 trendpars.mean<-ddply(subset(est.trendpars,max(Iteration)-Iteration<101),.(Parameter,Chain,scenario),summarise,meanPar=mean(value))
 #true.inftime<-data.frame(true.inftime=scenarios.results$true.values$infection.times)
 #true.inftime$Parameter<-paste0("InfTime[",1:nrow(true.inftime),"]")
 
-all.inftime<-merge(rbind(increase.true.inftime,
+
+library(data.table)
+increase.true.inftime<-data.table(increase.true.inftime, key="Parameter,scenario")
+decrease.true.inftime<-data.table(decrease.true.inftime, key="Parameter,scenario")
+constant.true.inftime<-data.table(constant.true.inftime, key="Parameter,scenario")
+est.inftime<-data.table(est.inftime,key="Parameter,scenario")
+
+all.inftime<-merge(rbindlist(list(increase.true.inftime,
                          decrease.true.inftime,
-                         constant.true.inftime),est.inftime,by=c("Parameter","scenario"))
-mean.inftime<-data.frame(true.inftime,ddply(ggs.inftime,.(Parameter),summarise,meanInfTime=mean(value)))
+                         constant.true.inftime)),est.inftime,by=c("Parameter","scenario"))
+#mean.inftime<-data.frame(true.inftime,ddply(ggs.inftime,.(Parameter),summarise,meanInfTime=mean(value)))
 
 
 ggplot(data=est.trendpars,
        aes(x=value,group=Chain))+
   geom_density(aes(fill=factor(Chain)),alpha=0.3)+
   facet_grid(scenario~Parameter,scales="free")+
-  geom_vline(data=subset(melt(true.pars,variable.name="Parameter"),Parameter%in%c("incidence","trend")),
+  geom_vline(data=subset(melt(true.pars,variable.name="Parameter"),Parameter%in%c("incidence","trend","mean.incidence")),
              aes(xintercept=value))
 
 
@@ -133,16 +148,16 @@ lineardist<-function(time,alpha,beta,chain){
 
 estTrend.df<- as.data.frame(apply(
                           recast(trendpars.mean,Chain+scenario~Parameter,measure.var="meanPar"),
-                          1,function(x)lineardist(1:30,as.numeric(x[3]),as.numeric(x[4]),1)))
+                          1,function(x)lineardist(1:censorLimit,as.numeric(x[3]),as.numeric(x[5]),1)))
 
 trueTrend.df<-do.call("rbind",
         apply(true.pars,1,function(x){
-          data.frame(scenario=x[8],Time=1:30,value=lineardist(1:30,as.numeric(x[5]),as.numeric(x[6]),1))}
+          data.frame(scenario=x[8],Time=1:censorLimit,value=lineardist(1:censorLimit,as.numeric(x[5]),as.numeric(x[6]),1))}
           ))
 trueTrend.df<-ddply(trueTrend.df, .(scenario), mutate,
                    weight = sum(value))
 colnames(estTrend.df)<-paste0("Chain",rep(1:5,each=3),".scenario.",rep(c("increase","decrease","constant"),5))
-estTrend.df<-data.frame(Time=1:30,estTrend.df)
+estTrend.df<-data.frame(Time=1:censorLimit,estTrend.df)
 estTrend.df<-melt(estTrend.df,id.vars="Time",variable.name="Chain")
 estTrend.df$scenario<-sapply(strsplit(as.character(estTrend.df$Chain),"\\."),"[",3)
 estTrend.df$Chain<-sapply(strsplit(as.character(estTrend.df$Chain),"\\."),"[",1)
@@ -151,7 +166,10 @@ estTrend.df$Chain<-as.numeric(as.factor(estTrend.df$Chain))
 estTrend.df$TrueCurve<-lineardist(estTrend.df$Time,1/100,1/100/50,1)
 estTrend.df<-ddply(estTrend.df, .(Chain,scenario), mutate,
       weight = sum(value))
-#ggplot(all.inftime,aes(x=true.inftime,y=value-true.inftime))+geom_point()+facet_grid(scenario~Chain)
+
+ggplot(all.inftime,aes(x=factor(round(true.inftime)),y=value-true.inftime))+
+  geom_violin()+
+  facet_grid(scenario~Chain)
 
 ggplot(all.inftime,aes(x=value))+geom_histogram(aes(y=..count../tapply(..count..,..PANEL..,sum)[..PANEL..]),binwidth=1)+
   facet_grid(scenario~Chain)+
@@ -171,7 +189,36 @@ ggplot(recast(est.trendpars,scenario+Chain+Iteration~Parameter,measure.var="valu
              aes(xintercept=incidence),alpha=0.5,size=2)+
   geom_hline(data=true.pars,
                            aes(yintercept=trend),alpha=0.5,size=2)+
-             facet_grid(scenario~Chain) 
+             facet_grid(scenario~Chain,scales="free") 
+
+
+
+##scatterplot for evaluating convergence
+ggplot(transform(recast(est.trendpars,scenario+Chain+Iteration~Parameter,measure.var="value"),
+                 mean.incidence=incidence+trend*censorLimit/2),aes(x=mean.incidence,y=trend))+
+  geom_vline(data=true.pars,
+             aes(xintercept=trend*censorLimit/2+incidence),alpha=0.5,size=2)+
+  geom_hline(data=true.pars,
+             aes(yintercept=trend),alpha=0.5,size=2)+
+  geom_point(alpha=0.4,aes(col=factor(Chain)))+#geom_line(alpha=0.75)+
+  geom_point(data=true.pars,
+             aes(y=trend,x=trend*censorLimit/2+incidence,col=scenario),size=5)+
+  facet_grid(scenario~Chain,scales="free") 
+
+
+
+
+## Scatterplot of the posterior for results purposes 
+ggplot(transform(recast(est.trendpars,scenario+Chain+Iteration~Parameter,measure.var="value"),
+   mean.incidence=incidence+trend*censorLimit/2),aes(x=mean.incidence,y=trend))+
+  geom_vline(data=true.pars,
+             aes(xintercept=trend*censorLimit/2+incidence),alpha=0.5,size=2)+
+  geom_hline(data=true.pars,
+             aes(yintercept=trend),alpha=0.5,size=2)+
+   geom_point(alpha=0.4,aes(col=scenario))+#geom_line(alpha=0.75)+
+  geom_point(data=true.pars,
+              aes(y=trend,x=trend*censorLimit/2+incidence,col=scenario),size=5)
+
 
 ##True histogram 
 #hist(true.inftime$true.inftime,freq=FALSE)

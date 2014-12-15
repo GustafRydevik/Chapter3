@@ -64,6 +64,7 @@ nreps=0
 
 ###Epidemic trend pars
 Epi.scenario="EndemicConstantFixedSD" ##EndemicLinear EpidemicExp EpidemicLognorm
+Epi.scenario="EndemicKnownTimes"
 Epi.model="EndemicLinear"
 Start.time=0
 End.time=30
@@ -81,7 +82,7 @@ Actual.=T
 pathogen="btv" #or "pertussis"
 
 ##Test value generator parameters 
-diseaseType="diseaseType1" ##diseaseType2 diseaseType3
+diseaseType="diseaseType2" ##diseaseType1 diseaseType3
 n.tests=2
 test1.sd=1.27
 test2.sd=1.57
@@ -97,7 +98,7 @@ set.seed(seed)
 
 ##LV.Fun accepts a list of parameters specific to the disease type. get() gets this list.
 kinetic.fun=LotkaVolterra.Fun(disease=get(diseaseType))
-measurement.sd=c(test1.sd=1.27,test2.sd=1.57)
+measurement.sd=c(test1.sd=test1.sd,test2.sd=test2.sd)
 
 
 ####################################################################
@@ -110,7 +111,7 @@ measurement.sd=c(test1.sd=1.27,test2.sd=1.57)
 
 if(Epi.scenario%in%c("EndemicConstant","EndemicIncrease","EndemicDecrease")){
 ##Linear trend args
-scenario.args=list(n.infection=1000,
+scenario.args=list(n.infection=samplesize,
                    start.time=Start.time,
                    end.time=End.time,
                    incidence=Incidence,
@@ -121,13 +122,13 @@ Epi.model="EndemicLinear"
 }else{
     if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
       ##Linear trend args
-      scenario.args=list(n.infection=1000,
+      scenario.args=list(n.infection=samplesize,
                          start.time=Start.time,
                          end.time=End.time,
                          incidence=Incidence,
                          trend=Trend)
       modelscript.name="bugs/hindcast_linear_fixedSD_proppos.txt"
-      sample.vars=c("incidence","trend","InfTime")
+      sample.vars=c("incidence","trend","mean.incidence","InfTime")
       Epi.model="EndemicLinear"
     }else{
 ##Exponential trend args
@@ -141,6 +142,17 @@ sample.vars=c("trend")
 Epi.model="EpidemicExp"
 
 }else{
+  if(Epi.scenario=="EndemicKnownTimes"){
+  modelscript.name="bugs/hindcast_linear_knowntimes.txt"
+  scenario.args=list(n.infection=samplesize,
+                     start.time=Start.time,
+                     end.time=End.time,
+                     incidence=Incidence,
+                     trend=Trend)
+  sample.vars=c("incidence","trend","mean.incidence","InfTime")
+  Epi.model="EndemicLinear"
+  
+}else{
 ##lognorm trend args 
 scenario.args=list(n.infection=samplesize,
                    start.time=Start.time,
@@ -152,7 +164,7 @@ Epi.model="EpidemicLognorm"
 
 modelscript.name="bugs/hindcast_lognorm.txt"
 sample.vars=c("peak.time","duration")
-}}}
+}}}}
 ##############################
 
 #### Step.data (and likelihood!)
@@ -183,29 +195,33 @@ for(i in 0:nreps){
   
   if(Epi.scenario%in%c("EndemicConstant","EndemicIncrease","EndemicDecrease")){
     ##Linear trend args
-    bugs.args=list(censorLimit=End.time-Start.time+1,
+    bugs.args=list(censorLimit=End.time-Start.time,
                    is.naive=is.na(iteration.data$test.obsvalues[,1])
     )
     inits.list<-vector(mode="list",length=n.chains.)
     for(C in 1:n.chains.){
       inits.list[[C]]=list(
         InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
-                       35,runif(nrow(iteration.data$test.obsvalues),0,30)),
+                       35,runif(nrow(iteration.data$test.obsvalues),0,End.time-Start.time)),
         incidence=runif(1,0.01,0.3),
         trend=runif(1,-0.01/35,0.01/35))
     }
   }else{
     if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
       ##Linear trend args
-      bugs.args=list(censorLimit=End.time-Start.time+1,
+      peak<-ifelse(diseaseType=="diseaseType1",4,ifelse(diseaseType=="diseaseType2",15,10)) ##change this to line of least likelihood
+      bugs.args=list(censorLimit=End.time-Start.time,
                      is.naive=is.na(iteration.data$test.obsvalues[,1]),
-                     sd=c(test1.sd,test2.sd)
+                     sd=c(test1.sd,test2.sd),
+                     peak=peak
       )
       inits.list<-vector(mode="list",length=n.chains.)
       for(C in 1:n.chains.){
         inits.list[[C]]=list(
-          InfTime=runif(nrow(iteration.data$test.obsvalues),0,End.time-Start.time+1),
-          mean.incidence=runif(1,0.01,0.3),
+          prepeak=sample(c(0,1),nrow(iteration.data$test.obsvalues),replace=TRUE),
+          Prepeak.time=runif(nrow(iteration.data$test.obsvalues),0,peak),
+          Postpeak.time=runif(nrow(iteration.data$test.obsvalues),peak,End.time-Start.time),
+          mean.incidence.tmp=runif(1,0.3,1),
           trend=runif(1,-0.01,0.01)/15)
       }
     }else{
@@ -216,13 +232,27 @@ for(i in 0:nreps){
         
         
       }else{
+        if(Epi.scenario=="EndemicKnownTimes"){
+          ##Linear trend args
+          bugs.args=list(censorLimit=End.time-Start.time,
+                         is.naive=is.na(iteration.data$test.obsvalues[,1]),
+                         InfTime=iteration.data$infection.times,
+                         sd=c(test1.sd,test2.sd)
+          )
+          inits.list<-vector(mode="list",length=n.chains.)
+          for(C in 1:n.chains.){
+            inits.list[[C]]=list(
+              mean.incidence.tmp=runif(1,0.3,1),
+              trend=runif(1,-0.01,0.01)/15)
+          }
+        }else{
         ##lognorm trend args 
         bugs.args=list()
         inits.list=list(peak.time=rgamma(1,4,scale=End.time/4),
                         duration.tmp=abs(rt(1,5))
         )
         
-      }}}
+      }}}}
   ##########################################
   ##########################################
   bugsdata<-c(list(N=nrow(iteration.data$test.obsvalues),
@@ -260,7 +290,8 @@ for(i in 0:nreps){
     if(!(inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
       iteration.samples<-coda.samples(multitest.bugs,variable.names=sample.vars,mcmc.ss,thin=thin)
     }
-    gelman.current<-mean(gelman.diag(iteration.samples[,grep(paste(sample.vars[-which(sample.vars=="InfTime")],collapse="|"),colnames(iteration.samples[[1]])),drop=FALSE])$psrf[,1])
+    #gelman.current<-mean(gelman.diag(iteration.samples[,grep(paste(sample.vars[-which(sample.vars=="InfTime")],collapse="|"),colnames(iteration.samples[[1]])),drop=FALSE])$psrf[,1])
+    
     print("current convergence: ")
     print(gelman.current)
     print("\n")

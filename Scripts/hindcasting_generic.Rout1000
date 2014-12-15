@@ -333,7 +333,7 @@ function (n.infections, end.time, peak.time, sd, ...)
     infection.times <- end.time - infection.times
     return(infection.times)
 }
-<environment: 0x7fb5ae4fb7c8>
+<environment: 0x7fdb1e3f2638>
 
 [[3]]$visible
 [1] FALSE
@@ -547,6 +547,40 @@ function (testkinetic, timeFun, timeFun.args = NULL, errorFun,
 
 [[8]]
 [[8]]$value
+function (incidence = 0.01, trend = 0.01/30, censorLimit = 30, 
+    simtype = "population", n.obs = 1000, engine = "nlm", transform.pars = TRUE, 
+    type = "ll") 
+{
+    approx.popsize <- round(n.obs/(censorLimit * (incidence + 
+        trend * censorLimit/2)))
+    obs.data <- if (simtype == "population") {
+        EndemicLinear(approx.popsize, incidence = incidence, 
+            trend = trend, start.time = 0, end.time = censorLimit)
+    }
+    else {
+        rlinear.tsi(n.obs, incidence = incidence, trend = trend, 
+            censorLimit = censorLimit)
+    }
+    obs.data <- obs.data[!is.na(obs.data)]
+    prior.inc <- exp(censorLimit * log(1 - length(obs.data)/(approx.popsize)))
+    pars.est <- nlm(tsi.linear.ll, p = c(log(prior.inc), log((prior.inc)/(censorLimit))), 
+        transform.pars = transform.pars, data = obs.data, popsize = approx.popsize, 
+        censorLimit. = censorLimit, steptol = 1e-08)
+    if (transform.pars) {
+        pars.est$estimate[1] <- exp(pars.est$estimate[1])
+        pars.est$estimate[2] <- exp(pars.est$estimate[2]) - pars.est$estimate[1]/censorLimit
+    }
+    return(list(incidence.est = pars.est$estimate[1], trend.est = pars.est$estimate[2], 
+        incidence.bias = incidence - pars.est$estimate[1], trend.bias = trend - 
+            pars.est$estimate[2]))
+}
+
+[[8]]$visible
+[1] FALSE
+
+
+[[9]]
+[[9]]$value
 function (mcmc.posterior, interval.eval = 1, range.eval = 1000, 
     df = TRUE, use.z = F, ...) 
 {
@@ -591,23 +625,23 @@ function (mcmc.posterior, interval.eval = 1, range.eval = 1000,
     }
 }
 
-[[8]]$visible
-[1] FALSE
-
-
-[[9]]
-[[9]]$value
-NULL
-
 [[9]]$visible
 [1] FALSE
 
 
 [[10]]
 [[10]]$value
-[1] "time" "abt"  "nat" 
+NULL
 
 [[10]]$visible
+[1] FALSE
+
+
+[[11]]
+[[11]]$value
+[1] "time" "abt"  "nat" 
+
+[[11]]$visible
 [1] FALSE
 
 
@@ -633,8 +667,9 @@ NULL
 > 
 > ###Epidemic trend pars
 > Epi.scenario="EndemicConstantFixedSD" ##EndemicLinear EpidemicExp EpidemicLognorm
+> Epi.scenario="EndemicKnownTimes"
 > Epi.model="EndemicLinear"
-> Start.time=1
+> Start.time=0
 > End.time=30
 > Incidence=1/100
 > samplesize= 1000
@@ -650,7 +685,7 @@ NULL
 > pathogen="btv" #or "pertussis"
 > 
 > ##Test value generator parameters 
-> diseaseType="diseaseType1" ##diseaseType2 diseaseType3
+> diseaseType="diseaseType2" ##diseaseType1 diseaseType3
 > n.tests=2
 > test1.sd=1.27
 > test2.sd=1.57
@@ -672,11 +707,11 @@ $adapt.iter
 $n.chains.
 [1] 5
 
-$samplesize
-[1] 10000
-
 $mcmc.ss
-[1] 10000
+[1] 1000
+
+$thin
+[1] 10
 
 $converge
 [1] "FALSE"
@@ -688,22 +723,25 @@ $converge.time
 [1] 0.2
 
 $Start.time
-[1] 1
+[1] 0
 
 $End.time
-[1] 30
+[1] 20
 
 $Incidence
-[1] 0.01
+[1] 0.05
 
 $Epi.scenario
-[1] "EndemicConstant"
+[1] "EndemicConstantFixedSD"
 
 $Trend
 [1] 0
 
 $diseaseType
-[1] "diseaseType1"
+[1] "diseaseType3"
+
+$samplesize
+[1] 5000
 
 $rep.prefix
 [1] 0
@@ -715,10 +753,10 @@ $ncores
 [1] 1
 
 $test1.sd
-[1] 1.27
+[1] 1.3
 
 $test2.sd
-[1] 1.57
+[1] 1.3
 
 $n.tests
 [1] 2
@@ -729,7 +767,7 @@ $n.tests
 > 
 > ##LV.Fun accepts a list of parameters specific to the disease type. get() gets this list.
 > kinetic.fun=LotkaVolterra.Fun(disease=get(diseaseType))
-> measurement.sd=c(test1.sd=1.27,test2.sd=1.57)
+> measurement.sd=c(test1.sd=test1.sd,test2.sd=test2.sd)
 > 
 > 
 > ####################################################################
@@ -742,7 +780,7 @@ $n.tests
 > 
 > if(Epi.scenario%in%c("EndemicConstant","EndemicIncrease","EndemicDecrease")){
 + ##Linear trend args
-+ scenario.args=list(n.infection=1000,
++ scenario.args=list(n.infection=samplesize,
 +                    start.time=Start.time,
 +                    end.time=End.time,
 +                    incidence=Incidence,
@@ -751,17 +789,17 @@ $n.tests
 + sample.vars=c("incidence","trend","sd","InfTime")
 + Epi.model="EndemicLinear"
 + }else{
-+   if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
-+     ##Linear trend args
-+     scenario.args=list(n.infection=1000,
-+                        start.time=Start.time,
-+                        end.time=End.time,
-+                        incidence=Incidence,
-+                        trend=Trend)
-+     modelscript.name="bugs/hindcast_linear_fixedSD.txt"
-+     sample.vars=c("incidence","trend","InfTime")
-+     Epi.model="EndemicLinear"
-+   }else{
++     if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
++       ##Linear trend args
++       scenario.args=list(n.infection=samplesize,
++                          start.time=Start.time,
++                          end.time=End.time,
++                          incidence=Incidence,
++                          trend=Trend)
++       modelscript.name="bugs/hindcast_linear_fixedSD_proppos.txt"
++       sample.vars=c("incidence","trend","mean.incidence","InfTime")
++       Epi.model="EndemicLinear"
++     }else{
 + ##Exponential trend args
 +   if(Epi.scenario=="EpidemicExp"){
 + scenario.args=list(n.infection=samplesize,
@@ -772,6 +810,17 @@ $n.tests
 + sample.vars=c("trend")
 + Epi.model="EpidemicExp"
 + 
++ }else{
++   if(Epi.scenario=="EndemicKnownTimes"){
++   modelscript.name="bugs/hindcast_linear_knowntimes.txt"
++   scenario.args=list(n.infection=samplesize,
++                      start.time=Start.time,
++                      end.time=End.time,
++                      incidence=Incidence,
++                      trend=Trend)
++   sample.vars=c("incidence","trend","mean.incidence","InfTime")
++   Epi.model="EndemicLinear"
++   
 + }else{
 + ##lognorm trend args 
 + scenario.args=list(n.infection=samplesize,
@@ -784,7 +833,7 @@ $n.tests
 + 
 + modelscript.name="bugs/hindcast_lognorm.txt"
 + sample.vars=c("peak.time","duration")
-+ }}}
++ }}}}
 > ##############################
 > 
 > #### Step.data (and likelihood!)
@@ -794,130 +843,158 @@ $n.tests
 > 
 > 
 > for(i in 0:nreps){
-+  
++   
 +   t0<-proc.time()
-+         iteration.data<-
-+           LabdataGeneratorGeneric(
-+             testkinetic=kinetic.fun,
-+             timeFun= get(Epi.model),
-+             timeFun.args=scenario.args,
-+             errorFun=errorFun.lognorm,
-+             errorFun.args=list(standard.deviation=log(measurement.sd))
-+           )
++   iteration.data<-
++     LabdataGeneratorGeneric(
++       testkinetic=kinetic.fun,
++       timeFun= get(Epi.model),
++       timeFun.args=scenario.args,
++       errorFun=errorFun.lognorm,
++       errorFun.args=list(standard.deviation=log(measurement.sd))
++     )
++   n.sampled<-length(iteration.data$infection.times)
++   iteration.data<-lapply(iteration.data,function(x){if(!is.null(ncol(x))){x[is.finite(iteration.data$infection.times),]}else{x[is.finite(iteration.data$infection.times)]}})
++   iteration.data$n.sampled<-n.sampled
++   iteration.data$PropAboveCensor<-(n.sampled-length(iteration.data$infection.times))/n.sampled
 +   ###########################################################
 +   ##### Generating inits and bugs pars below here ###########
 +   ###########################################################
 +   
-+  
-+    if(Epi.scenario%in%c("EndemicConstant","EndemicIncrease","EndemicDecrease")){
++   
++   if(Epi.scenario%in%c("EndemicConstant","EndemicIncrease","EndemicDecrease")){
++     ##Linear trend args
++     bugs.args=list(censorLimit=End.time-Start.time,
++                    is.naive=is.na(iteration.data$test.obsvalues[,1])
++     )
++     inits.list<-vector(mode="list",length=n.chains.)
++     for(C in 1:n.chains.){
++       inits.list[[C]]=list(
++         InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
++                        35,runif(nrow(iteration.data$test.obsvalues),0,End.time-Start.time)),
++         incidence=runif(1,0.01,0.3),
++         trend=runif(1,-0.01/35,0.01/35))
++     }
++   }else{
++     if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
 +       ##Linear trend args
-+       bugs.args=list(censorLimit=End.time-Start.time+1,
-+                      is.naive=is.na(iteration.data$test.obsvalues[,1])
++       peak<-ifelse(diseaseType=="diseaseType1",4,ifelse(diseaseType=="diseaseType2",15,10)) ##change this to line of least likelihood
++       bugs.args=list(censorLimit=End.time-Start.time,
++                      is.naive=is.na(iteration.data$test.obsvalues[,1]),
++                      sd=c(test1.sd,test2.sd),
++                      peak=peak
 +       )
 +       inits.list<-vector(mode="list",length=n.chains.)
 +       for(C in 1:n.chains.){
-+       inits.list[[C]]=list(
-+         InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
-+                        35,runif(nrow(iteration.data$test.obsvalues),0,30)),
-+         incidence=runif(1,0.01,0.3),
-+         trend=runif(1,-0.01/35,0.01/35))
++         inits.list[[C]]=list(
++           prepeak=sample(c(0,1),nrow(iteration.data$test.obsvalues),replace=TRUE),
++           Prepeak.time=runif(nrow(iteration.data$test.obsvalues),0,peak),
++           Postpeak.time=runif(nrow(iteration.data$test.obsvalues),peak,End.time-Start.time),
++           mean.incidence.tmp=runif(1,0.3,1),
++           trend=runif(1,-0.01,0.01)/15)
 +       }
 +     }else{
-+       if(Epi.scenario%in%c("EndemicConstantFixedSD","EndemicIncreaseFixedSD","EndemicDecreaseFixedSD")){
-+         ##Linear trend args
-+         bugs.args=list(censorLimit=End.time-Start.time+1,
-+                        is.naive=is.na(iteration.data$test.obsvalues[,1]),
-+                        sd=c(test1.sd,test2.sd)
-+         )
-+         inits.list<-vector(mode="list",length=n.chains.)
-+         for(C in 1:n.chains.){
-+           inits.list[[C]]=list(
-+             InfTime=ifelse(is.na(iteration.data$test.obsvalues[,1]),
-+                            35,runif(nrow(iteration.data$test.obsvalues),0,30)),
-+             incidence=runif(1,0.01,0.3),
-+             trend=runif(1,-0.01/35,0.01/35))
-+         }
-+       }else{
 +       ##Exponential trend args
 +       if(Epi.scenario=="EpidemicExp"){
 +         bugs.args=list()
 +         inits.list=list()
-+ 
++         
 +         
 +       }else{
++         if(Epi.scenario=="EndemicKnownTimes"){
++           ##Linear trend args
++           bugs.args=list(censorLimit=End.time-Start.time,
++                          is.naive=is.na(iteration.data$test.obsvalues[,1]),
++                          InfTime=iteration.data$infection.times,
++                          sd=c(test1.sd,test2.sd)
++           )
++           inits.list<-vector(mode="list",length=n.chains.)
++           for(C in 1:n.chains.){
++             inits.list[[C]]=list(
++               mean.incidence.tmp=runif(1,0.3,1),
++               trend=runif(1,-0.01,0.01)/15)
++           }
++         }else{
 +         ##lognorm trend args 
 +         bugs.args=list()
 +         inits.list=list(peak.time=rgamma(1,4,scale=End.time/4),
 +                         duration.tmp=abs(rt(1,5))
 +         )
 +         
-+       }}}
++       }}}}
 +   ##########################################
 +   ##########################################
-+           bugsdata<-c(list(N=nrow(iteration.data$test.obsvalues),
-+                  Test.data=iteration.data$test.obsvalues,
-+                  time.lookup=c(seq(0.5,99.5,by=0.5)),
-+                  test.lookup=kinetic.fun(c(seq(0.5,99.5,by=0.5))),
-+                  ntest=n.tests),
-+                  bugs.args
-+                 )
-+         pars.inits<-vector(length=n.chains.,mode="list")
-+         for(C in 1:n.chains.){
-+           pars.inits[[C]]<-c(inits.list[[C]],
-+                              list(logsd.tmp=rep(runif(1,log(1.02),log(4)),n.tests))
-+           )
-+         }
-+  
-+         
-+           multitest.bugs<-jags.model(file=file.path(script.path,modelscript.name),
-+                                               data=bugsdata,
-+                                               inits=pars.inits,
-+                                               n.adapt=0,
-+                                               n.chains=n.chains.)
-+          
-+         possibleError1<-tryCatch(adapt(multitest.bugs,adapt.iter),
-+                                  error=function(e) e )
-+         
-+         gelman.current<-Inf
-+         start.time<-proc.time()
-+         elapsed.time<-0
-+         while(((gelman.current>converge.criteria)&(elapsed.time<converge.time))){
-+ 
-+         possibleError2<-tryCatch(update(multitest.bugs,burn.in),
-+                                  error=function(e) e)
-+         if(!(inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
-+           iteration.samples<-coda.samples(multitest.bugs,variable.names=sample.vars,mcmc.ss,thin=thin)
-+         }
-+        gelman.current<-mean(gelman.diag(iteration.samples[,grep(paste(sample.vars[-which(sample.vars=="InfTime")],collapse="|"),colnames(iteration.samples[[1]])),drop=FALSE])$psrf[,1])
-+             print("current convergence: ")
-+         print(gelman.current)
-+         print("\n")
-+         if(converge==F){gelman.current<-1}
-+         elapsed.time<-(proc.time()-start.time)[3]/3600 
-+         print(elapsed.time)
-+         }
-+           scenarios.results$true.values<-iteration.data
-+           scenarios.results$est<-iteration.samples
-+           
-+         
-+         scenarios.results$pars.inits<-pars.inits
-+         if((inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
-+           scenarios.results$est<-FALSE
-+           scenarios.results$error<-c(possibleError1,possibleError2)
-+         }  
-+         
-+       
-+       print(i) 
-+       save(scenarios.results,file=paste(
-+         sim.dir,diseaseType,
-+         "_",Epi.scenario,
-+           "_seed_",seed,
-+           "_t",n.tests,
-+           paste("_samplesize",samplesize,sep=""),
-+           "_",rep.prefix,i,
-+         "_gr",round(gelman.current,2),
-+           ".RData",sep=""))
-+       }
++   bugsdata<-c(list(N=nrow(iteration.data$test.obsvalues),
++                    NTot=iteration.data$n.sampled,
++                    Test.data=iteration.data$test.obsvalues,
++                    time.lookup=c(seq(0.5,99.5,by=0.5)),
++                    test.lookup=kinetic.fun(c(seq(0.5,99.5,by=0.5))),
++                    ntest=n.tests),
++               bugs.args
++   )
++   pars.inits<-vector(length=n.chains.,mode="list")
++   for(C in 1:n.chains.){
++     pars.inits[[C]]<-c(inits.list[[C]],
++                        list(logsd.tmp=rep(runif(1,log(1.02),log(4)),n.tests))
++     )
++   }
++   
++   
++   multitest.bugs<-jags.model(file=file.path(script.path,modelscript.name),
++                              data=bugsdata,
++                              inits=pars.inits,
++                              n.adapt=0,
++                              n.chains=n.chains.)
++   
++   possibleError1<-tryCatch(adapt(multitest.bugs,adapt.iter),
++                            error=function(e) e )
++   
++   gelman.current<-Inf
++   start.time<-proc.time()
++   elapsed.time<-0
++   while(((gelman.current>converge.criteria)&(elapsed.time<converge.time))){
++     
++     possibleError2<-tryCatch(update(multitest.bugs,burn.in),
++                              error=function(e) e)
++     if(!(inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
++       iteration.samples<-coda.samples(multitest.bugs,variable.names=sample.vars,mcmc.ss,thin=thin)
++     }
++     #gelman.current<-mean(gelman.diag(iteration.samples[,grep(paste(sample.vars[-which(sample.vars=="InfTime")],collapse="|"),colnames(iteration.samples[[1]])),drop=FALSE])$psrf[,1])
++     
++     print("current convergence: ")
++     print(gelman.current)
++     print("\n")
++     if(converge==F){gelman.current<-1}
++     elapsed.time<-(proc.time()-start.time)[3]/3600 
++     print(elapsed.time)
++   }
++   scenarios.results$true.values<-iteration.data
++   scenarios.results$est<-iteration.samples
++   
++   
++   scenarios.results$pars.inits<-pars.inits
++   scenarios.results$control.vars<-c(modelscript.name=modelscript.name,
++                                     scenario.args,
++                                     Epi.model=Epi.model)
++   scenarios.results$time<-Sys.time()
++   
++   if((inherits(possibleError1, "error")|inherits(possibleError2, "error"))){
++     scenarios.results$est<-FALSE
++     scenarios.results$error<-c(possibleError1,possibleError2)
++   }  
++   
++   
++   print(i) 
++   save(scenarios.results,file=paste(
++     sim.dir,diseaseType,
++     "_",Epi.scenario,
++     "_seed_",seed,
++     "_t",n.tests,
++     paste("_samplesize",samplesize,sep=""),
++     "_",rep.prefix,i,
++     "_gr",round(gelman.current,2),
++     ".RData",sep=""))
++ }
 Compiling data graph
    Resolving undeclared variables
    Allocating nodes
@@ -926,7 +1003,7 @@ Compiling data graph
 Compiling model graph
    Resolving undeclared variables
    Allocating nodes
-   Graph Size: 21633
+   Graph Size: 96342
 
 Initializing model
 
@@ -934,9 +1011,9 @@ NOTE: Stopping adaptation
 
 
 [1] "current convergence: "
-[1] 1.904734
+[1] Inf
 [1] "\n"
   elapsed 
-0.3051706 
+0.9627528 
 [1] 0
 > 

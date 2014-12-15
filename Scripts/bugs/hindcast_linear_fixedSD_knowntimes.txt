@@ -1,0 +1,47 @@
+##This jags file assumes a constant incidence of cases
+
+data {
+for(i in 1:N){
+ones[i]<-1
+}
+C<-10000
+sd.prior<-1.5
+infpeak.prior<-10
+}
+
+
+
+model {
+
+area<-(1-exp(-(incidence*censorLimit+trend*censorLimit^2/2)))
+
+for (i in 1:N){
+
+                ones[i] ~ dbern(p[i])
+                p[i] <- L[i] / C
+                L[i]<-(incidence+trend*InfTime[i])*exp(-(incidence+trend*(InfTime[i])/2)*InfTime[i])/area*belowC
+                belowC<-step(censorLimit-InfTime[i])
+##trend is negative, to indicate trend as time increases, or time since infection decreases
+
+ }
+
+
+EpiStart<-max(InfTime)
+
+##Prior for the observational error
+
+### This is to ensure that overall incidence is always positive over the time of interest. 
+
+incidence<-mean.incidence-trend*censorLimit/2
+
+trend~dunif(-2*mean.incidence/censorLimit,2*mean.incidence/censorLimit)
+
+mean.incidence<-1-(1-mean.incidence.tmp)^(1/censorLimit)
+mean.incidence.tmp~dbeta(N+1,(NTot-N)+1) ##the equivalent incidence if just exposed once.
+
+
+
+##Define TestFun as getting data from vectors of time-and-value.
+
+
+ 

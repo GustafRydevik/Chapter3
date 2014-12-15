@@ -1,0 +1,50 @@
+##This jags file assumes a constant incidence of cases
+
+data {
+for(i in 1:N){
+ones[i]<-1
+}
+C<-10000
+sd.prior<-1.5
+infpeak.prior<-10
+}
+
+
+
+model {
+
+
+for (i in 1:N){ 
+for (test in 1:ntest){
+   Test.data[i,test]~dlnorm(log(TestMean[i,test]),tau[test]) ###=1/(sd^2)
+   TestMean[i,test]<-test.lookup[ndx[i],test]
+}
+   ndx[i]<-max(1,sum((InfTime[i]>time.lookup)))
+}
+
+###############
+####Priors#####
+###############
+
+
+
+for (test in 1:ntest){
+tau[test]<-1/logsd[test]^2
+#logsd[test]~dnorm(0,1/1000) T(0,)
+
+#sd[test]<-abs(sd.tmp[test])+1
+#sd.tmp[test]~dt(0,(1/((0.41)/4))^2,10)
+ #logsd[test]<-abs(logsd.tmp[test])
+ #logsd.tmp[test]~dt(0,(1/(log(sd.propr)/4))^2,10) #mu, tau=precision, k=df 
+  
+}
+
+for(i in 1:N){
+InfTime[i]~dunif(0,censorLimit)
+}
+}
+
+##Define TestFun as getting data from vectors of time-and-value.
+
+
+ 

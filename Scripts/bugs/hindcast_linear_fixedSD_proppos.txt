@@ -118,17 +118,20 @@ logsd[test]<-log(sd[test])
 
 ### This is to ensure that overall incidence is always positive over the time of interest. 
 
-
-
 incidence<-mean.incidence-trend*censorLimit/2
 
 trend~dunif(-2*mean.incidence/censorLimit,2*mean.incidence/censorLimit)
 
-mean.incidence<-mean.incidence.tmp/censorLimit
-mean.incidence.tmp~dbeta(N+1,(NTot-N)+1)
+mean.incidence<-1-(1-mean.incidence.tmp)^(1/censorLimit)
+mean.incidence.tmp~dbeta(N+1,(NTot-N)+1) ##the equivalent incidence if just exposed once.
 
 for(i in 1:N){
-InfTime[i]~dlnorm(log(infpeak.prior),1/log(10^(1/2))^2) T(,censorLimit)
+#InfTime[i]~dlnorm(log(infpeak.prior),1/log(10^(1/2))^2) T(,censorLimit)
+InfTime[i]<-Prepeak.time[i]*prepeak[i]+Postpeak.time[i]*(1-prepeak[i])
+Postpeak.time[i]~dunif(peak,censorLimit)
+Prepeak.time[i]~dunif(0,peak)
+prepeak[i]~dbern(0.5)
+
 #InfTime[i]~dgamma(0.001,0.001)
 #InfTime[i]<-exp(InfTime.log[i])
 #InfTime.log[i]~dnorm(,0.00)
