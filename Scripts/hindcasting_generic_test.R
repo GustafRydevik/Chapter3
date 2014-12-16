@@ -13,39 +13,24 @@
 got.mdrive<-length(dir("M:"))>0
 is.win<-grepl("w32",R.Version()$platform)
 is.girion<-sum(grep("girion",system("hostname",intern=TRUE)))
-is.amz<-grep("^ip",system("hostname",intern=TRUE))
-dropbox.amz<-"/home/gustaf/ch3"
 dropbox.sac<-"C:/Documents and Settings/GRydevik/My Documents/Dropbox"
 dropbox.bioss<-"D:\\Dropbox"
 dropbox.osx<-"/Users/gustafrydevik/Dropbox"
 dropbox.girion<-"/home/gustaf/SeroNA_temp"
 dropbox.path<-c(dropbox.osx,dropbox.sac,dropbox.bioss)[got.mdrive+is.win+1]
 if(is.girion){dropbox.path<-dropbox.girion}
-if(is.amz){dropbox.path<-dropbox.amz}
 #sim.dir<-"D:/simulations/"
 #sim.dir<-paste(dropbox.path,"/simulations",sep="")
 sim.dir<-"/Users/gustafrydevik/simulations/Chapter3/"
 if(is.girion)sim.dir<-file.path(dropbox.path,"simulations/")
-if(is.amz)sim.dir<-file.path(dropbox.path,"simulations/")
-
 ##Project specific parameters
 project.path<-file.path(dropbox.path,"PhD folder/Chapter3")
 if(is.girion){project.path<-dropbox.girion}
-if(is.amz){project.path<-dropbox.amz}
 data.path<-file.path(project.path,"Data")
 script.path<-file.path(project.path,"Scripts")
 output.path<-file.path(project.path,"Output")
 
-#lapply(dir(file.path(dropbox.path,"GusLib"),full.names=T),source)
-autolib<-function(Package,mirror="http://stat.ethz.ch/CRAN",...){
-  if(!suppressWarnings(require(as.character(substitute(Package)),
-                               character.only=TRUE,quietly=TRUE,...))){
-    Package<-as.character(substitute(Package))
-    install.packages(Package,repos=mirror,...)
-    library(Package,character.only=TRUE)	
-  }		
-}
-
+lapply(dir(file.path(dropbox.path,"GusLib"),full.names=T),source)
 
 
 autolib(rjags)
@@ -195,15 +180,15 @@ sample.vars=c("peak.time","duration")
 
 scenarios.results<-vector(mode="list",length=0)
 
-peak<-ifelse(diseaseType=="diseaseType1",5,
-             ifelse(diseaseType=="diseaseType2",5,5)
+peak<-ifelse(diseaseType=="diseaseType1",4,
+             ifelse(diseaseType=="diseaseType2",15,10)
              ) ##change this to line of least likelihood
 n.test<-if(n.tests=="Ab"){1}else{
   if(n.tests=="NA"){2}else{
     if(n.tests=="Both"){1:2}else{
       stop(simpleError("Wrong n. of tests!"))
     }}}
-censorLimit=End.time-Start.time
+
 
 for(i in 0:nreps){
   
@@ -360,6 +345,7 @@ for(i in 0:nreps){
     scenarios.results$est<-FALSE
     scenarios.results$error<-c(possibleError1,possibleError2)
   }  
+  
   
   print(i) 
   save(scenarios.results,file=paste(

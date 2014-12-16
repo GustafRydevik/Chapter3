@@ -9,13 +9,28 @@ EndemicConstant<-(function(){function(n.infections,incidence,start.time,end.time
 
 
 
-EndemicLinear<-(function(){function(n.infections,incidence,start.time,end.time,trend,...){
+EndemicLinear<-(function(){function(n.infections,incidence,start.time,end.time,trend,absolute.ss=TRUE,...){
   duration=abs(end.time-start.time)
   latest.infection<-rep(NA,n.infections)
+  ntot<-n.infections
+  if(absolute.ss){
+    mean.incidence=incidence+(end.time-start.time)*trend/2
+    tot.inc=1-(1-mean.incidence)^(end.time-start.time)
+    latest.infection<-rep(NA,n.infections/tot.inc)
+    ntot<-length(latest.infection)
+  }
   incidence.per.time<- (0.5+(0:(duration-1)))*trend+incidence # Trend as measured from Now to Past
   for(i in seq(duration,1)){
-    sample.ndx<-sample(1:n.infections,round(n.infections*incidence.per.time[i]))
+    sample.ndx<-sample(1:ntot,round(ntot*incidence.per.time[i]))
     latest.infection[sample.ndx]<-runif(length(sample.ndx),i-1,i)#Ideally a trapezoid..
+  }
+  if(absolute.ss){
+    n.current<-sum(!is.na(latest.infection))
+    diff<-n.infections-n.current
+    which.na<-which(is.na(latest.infection))
+    replace.ndx<-if(diff>0){which.na[seq_len(abs(diff))]}else{
+      seq_along(latest.infection)[-which.na][seq_len(abs(diff))]}
+    if(diff!=0){latest.infection[replace.ndx]<-sample(latest.infection[-1*sign(diff)*which.na],abs(diff))}
   }
   return(latest.infection)
 }})()

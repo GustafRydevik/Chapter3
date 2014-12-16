@@ -20,7 +20,7 @@ ab.na.diffmod<-function(Time,y=State,parms=Pars){
         dab=feed.ab*nat-dieoff.ab*abt
         return(list(c(dna,dab)))
       })}
-diseaseType1=list(parms=Pars1,y=State1)
+diseaseType1=list(parms=Pars1/2,y=State1)
 diseaseType2=list(parms=Pars2,y=State2)
 diseaseType3=list(parms=Pars3,y=State3)
 
@@ -48,8 +48,8 @@ LotkaVolterra.Fun<-function(disease=diseaseType1){
 }
 
 par(mfrow=c(3,1))
-plot(seq(1,10,by=0.1),LotkaVolterra.Fun(diseaseType1)(seq(1,10,by=0.1))[,1],type="l")
-lines(seq(1,10,by=0.1),LotkaVolterra.Fun(diseaseType1)(seq(1,10,by=0.1))[,2],type="l",col="red")
+plot(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType1)(seq(1,20,by=0.1))[,1],type="l")
+lines(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType1)(seq(1,20,by=0.1))[,2],type="l",col="red")
 
 plot(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType2)(seq(1,20,by=0.1))[,1],type="l")
 lines(seq(1,20,by=0.1),LotkaVolterra.Fun(diseaseType2)(seq(1,20,by=0.1))[,2]*10,type="l",col="red")
