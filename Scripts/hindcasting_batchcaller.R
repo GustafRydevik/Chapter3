@@ -59,19 +59,6 @@ autolib(reshape2)
 
 #### Reading in  functions specific for this project 
 
-base.pars<-list(
-### MCMC parameters
-burn.in=10,
-adapt.iter=50,
-n.chains.=5,
-mcmc.ss=50,
-thin=1,
-
-###Other run parameters
-converge=FALSE,
-converge.criteria=1.15,
-converge.time=0.2
-)
 
 constant.pars<-list(
 Epi.scenario="EndemicConstant", ##EndemicLinear EpidemicExp EpidemicLognorm
@@ -132,10 +119,10 @@ d3.pars<-list(
 base.pars<-list(
   ### MCMC parameters
   burn.in=100,
-  adapt.iter=50,
+  adapt.iter=1000,
   n.chains.=5,
-  mcmc.ss=100,
-  thin=10,
+  mcmc.ss=1000,
+  thin=5,
   
   ###Other run parameters
   converge=FALSE,
