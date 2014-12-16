@@ -32,7 +32,7 @@ if(is.amz)sim.dir<-file.path(dropbox.path,"simulations/")
 ##Project specific parameters
 project.path<-file.path(dropbox.path,"PhD folder/Chapter3")
 if(is.girion){project.path<-dropbox.girion}
-if(is.amz){project.path<-dropbox.amz}
+if(is.amz){project.path<-file.path(dropbox.amz,"Chapter3")}
 data.path<-file.path(project.path,"Data")
 script.path<-file.path(project.path,"Scripts")
 output.path<-file.path(project.path,"Output")
