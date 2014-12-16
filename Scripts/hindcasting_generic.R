@@ -54,7 +54,7 @@ autolib(rjags)
 autolib(batch)
 autolib(reshape2)
 
-My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
+#My.device<-Gen.device("png",res=400,width=12,height=3,units="in")
 
 source(file.path(script.path,"hindcasting helper functions/DensityEstimator.R"))
 #### Reading in  functions specific for this project 
@@ -71,6 +71,7 @@ adapt.iter=100
 n.chains.=5
 mcmc.ss=100
 thin=1
+burn.in=100
 
 ###Other run parameters
 converge<-F
@@ -206,7 +207,7 @@ n.test<-if(n.tests=="Ab"){1}else{
       stop(simpleError("Wrong n. of tests!"))
     }}}
 censorLimit=End.time-Start.time
-
+change.percent=0
 for(i in 0:nreps){
   
   t0<-proc.time()

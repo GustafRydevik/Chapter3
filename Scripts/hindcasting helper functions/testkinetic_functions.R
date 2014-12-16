@@ -1,6 +1,6 @@
 
 ###Lotka-Volterra example kinetics
-require(deSolve)
+autolib(deSolve)
 time.scale<-7
  Pars1<-c(growth.na=10/time.scale,killed.na=0.5/time.scale,feed.ab=2/time.scale,dieoff.ab=0.1/time.scale) ## incubation time increase, ~pertussis
  State1<-c(nat=1,abt=0)
