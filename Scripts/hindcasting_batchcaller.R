@@ -159,6 +159,10 @@ seed<-1000
 seed.iter<-seed
 Start.time=0
 
+Number.cores<-4
+
+if(is.amz){Number.cores<-as.numeric(system("nproc",intern=TRUE))}
+
 #### 1215 combinations are too many!!!!!
 for(rep in (ncalls.per.combination-1)){
   for(Sample.size in sample.size.range){
@@ -196,4 +200,4 @@ for(rep in (ncalls.per.combination-1)){
     }
   }
 }}}
-rbatch.local.run(ncores=4)
+rbatch.local.run(ncores=Number.cores)
