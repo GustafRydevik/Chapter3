@@ -103,7 +103,7 @@ diseaseType="diseaseType1" ##diseaseType2 diseaseType3
 )
 
 d2.pars<-list(
-  diseaseType="diseaseType3" ##diseaseType2 diseaseType3
+  diseaseType="diseaseType2" ##diseaseType2 diseaseType3
 )
 
 d3.pars<-list(
