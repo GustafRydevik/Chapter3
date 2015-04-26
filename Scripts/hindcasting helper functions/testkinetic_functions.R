@@ -20,13 +20,13 @@ ab.na.diffmod<-function(Time,y=State,parms=Pars){
         dab=feed.ab*nat-dieoff.ab*abt
         return(list(c(dna,dab)))
       })}
-diseaseType1=list(parms=Pars1,y=State1)
-diseaseType2=list(parms=Pars2*2,y=State2)
-diseaseType3=list(parms=Pars3*2,y=State3)
+diseaseType1=list(parms=Pars1*2,y=State1)
+diseaseType2=list(parms=Pars2*4,y=State2)
+diseaseType3=list(parms=Pars3*4,y=State3)
 
-diseaseTypeScrapie<-list(parms=Pars3*c(20/6),y=State3)
-diseaseTypeChlamydia<-list(parms=Pars1*1,y=State1)
-diseaseTypeSquirrelpox<-list(parms=Pars2*c(20/3),y=State3)
+diseaseTypeScrapie<-list(parms=Pars3*c(2*20/6),y=State3)
+diseaseTypeChlamydia<-list(parms=Pars1*2,y=State1)
+diseaseTypeSquirrelpox<-list(parms=Pars2*c(4*20/3),y=State3)
 
  tmp<-ode(func = ab.na.diffmod, y = State1, parms = Pars1, times = Time)
 par(mfrow=c(2,1))
