@@ -1,0 +1,17 @@
+##First connect to the instance - the address change each time you start up an instance
+ssh -i MicroTest.pem ubuntu@ec2-52-17-57-31.eu-west-1.compute.amazonaws.comu-west-1.compute.amazonaws.com
+
+## Then install software etcetera 
+sudo adduser gustaf
+sudo apt-get update
+sudo apt-get install r-base
+sudo apt-get install gdebi-core
+sudo apt-get install libapparmor1
+wget http://download2.rstudio.org/rstudio-server-0.98.1103-amd64.deb
+sudo gdebi rstudio-server-0.98.1103-amd64.deb
+sudo add-apt-repository ppa:marutter/rrutter
+sudo apt-get install jags r-cran-rjags
+sudo apt-get update
+apt-cache showpkg r-base
+
+##in website, run http://52.17.57.31:8787/

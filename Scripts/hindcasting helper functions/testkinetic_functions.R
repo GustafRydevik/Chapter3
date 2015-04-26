@@ -24,7 +24,9 @@ diseaseType1=list(parms=Pars1/2,y=State1)
 diseaseType2=list(parms=Pars2,y=State2)
 diseaseType3=list(parms=Pars3,y=State3)
 
-
+diseaseTypeScrapie<-list(parms=Pars3*c(20/6),y=State3)
+diseaseTypeChlamydia<-list(parms=Pars1*c(20/10),y=State1)
+diseaseTypeSquirrelpox<-list(parms=Pars2*c(20/3),y=State2)
 
  tmp<-ode(func = ab.na.diffmod, y = State1, parms = Pars1, times = Time)
 par(mfrow=c(2,1))

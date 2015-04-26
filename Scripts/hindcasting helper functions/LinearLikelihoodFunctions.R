@@ -59,6 +59,8 @@ tsi.linear.rmse<-function(pars,censorLimit.=censorLimit,data=obs.data,transform.
 
 #A function for evaluation the data likelihood of the linear trend curve decided by pars, given data.
 #Accepts parameters>0, ie logtransformed, so as to work well in conjunction with nlm
+##Popsize gives the number of total individuals tested to generate the observed number of cases. 
+
 
 tsi.linear.ll<-function(pars,censorLimit.,data=obs.data,transform.pars=TRUE,popsize,return.components=FALSE){
   incidence.<-pars[1]
@@ -68,12 +70,20 @@ tsi.linear.ll<-function(pars,censorLimit.,data=obs.data,transform.pars=TRUE,pops
     trend.<-exp(trend.)-incidence./censorLimit.
   }
   InfTime<-data[!is.na(data)]
-  mean.incidence<-incidence.+trend.*censorLimit./2
-  outside.range<-any(incidence.+trend.*InfTime<0)
+  mean.incidence<-incidence.+trend.*censorLimit./2  ##calculating the average incidence over the period
+  outside.range<-any(incidence.+trend.*InfTime<0)  ## checks if the estimated incidence is negative
+  
+  ##Calculates the evaluation of the prior for the trend line
   trend.prior.ll<-dunif(trend.,-2*mean.incidence/censorLimit.,2*mean.incidence/censorLimit.,log=T)
+ 
+  ##Calculates the value of the beta prior for the mean incidence over the period... (is this the corrected version?) 
   mean.inc.ll<-dbeta(1-(1-mean.incidence)^censorLimit.,length(InfTime)+1,(popsize-length(InfTime))+1,log=T)
   
+  ##calulating the normalizing area factor. 
   area<-log((1-exp(-(incidence.+trend.*censorLimit./2)*censorLimit.)))
+  
+  
+  ##calculating the contribution of the cdf of the time-since-infection distribution
   linear.tsi.ll<-sum(log((incidence.+trend.*InfTime)*exp(-(incidence.+trend.*(InfTime)/2)*InfTime))-area)
   
   loglik<-trend.prior.ll+mean.inc.ll+
